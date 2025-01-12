@@ -42,4 +42,21 @@ public abstract class FileUtils {
             return formatter.toString();
         }
     }
+
+    /**
+     * Returns the file path given the absolute path to a file and its prefix path from config.
+     *
+     * @param absoluteFilePath the absolute path
+     * @param configPrefix the prefix path from config
+     * @return the file path
+     * @throws IllegalArgumentException if the absolute path does not start with the prefix
+     */
+    public static String getFilePathFromAbsolutePath(final Path absoluteFilePath, final Path configPrefix) {
+        if (absoluteFilePath.startsWith(configPrefix)) {
+            // Remove the prefix and return the remaining path as a string
+            return configPrefix.relativize(absoluteFilePath).toString();
+        } else {
+            throw new IllegalArgumentException("Absolute path " + absoluteFilePath + " does not start with " + configPrefix);
+        }
+    }
 }
