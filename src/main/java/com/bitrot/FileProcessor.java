@@ -56,7 +56,7 @@ public class FileProcessor {
             for (final Future<FileResult> future : futures) {
                 final FileResult result = future.get();
 
-                // TODO categorization
+                // TODO categorization and logging to a file
             }
         } catch (final Exception e) {
             e.printStackTrace();

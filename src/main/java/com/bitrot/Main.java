@@ -24,5 +24,7 @@ public class Main {
         for (final String immutablePath : config.getImmutablePaths()) {
             processor.processFiles(Paths.get(immutablePath), true);
         }
+
+        // TODO hit health check
     }
 }

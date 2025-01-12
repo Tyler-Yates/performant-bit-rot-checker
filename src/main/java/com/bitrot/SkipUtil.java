@@ -20,7 +20,7 @@ import static com.bitrot.Constants.*;
 @SuppressWarnings("CallToPrintStackTrace")
 public class SkipUtil {
     private static final String TABLE_NAME = "file_verification";
-    private static final String FILE_NAME = TABLE_NAME + ".db";
+    private static final String FILE_NAME = TABLE_NAME + ".sqlite";
     private static final String PATH_SEPARATOR = FileSystems.getDefault().getSeparator();
 
     private final Connection connection;
