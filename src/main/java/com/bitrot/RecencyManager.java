@@ -1,0 +1,104 @@
+package com.bitrot;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.time.Instant;
+
+import static com.bitrot.Constants.RECENCY_CLEANUP_THRESHOLD;
+import static com.bitrot.Constants.RECENCY_SKIP_THRESHOLD;
+
+/**
+ * Responsible for checking if we need to check a file, or we can skip it because it has already been checked recently.
+ */
+public class RecencyManager {
+    private static final String TABLE_NAME = "file_verification";
+    private static final String FILE_NAME = TABLE_NAME + ".db";
+
+    private final Connection connection;
+
+    public RecencyManager() {
+        try {
+            connection = DriverManager.getConnection("jdbc:sqlite:" + FILE_NAME);
+            initializeTable();
+        } catch (final SQLException e) {
+            throw new RuntimeException("Failed to initialize file verification database", e);
+        }
+    }
+
+    /**
+     * Initialize the SQLite table if necessary.
+     * <p>
+     * {@code file_path} is the primary key and is the string path to the file<br>
+     * {@code modified_time} is a timestamp representing the modified time of the file on disk<br>
+     * {@code last_verified} is the timestamp when we last verified this file
+     *
+     * @throws SQLException if there was an SQL error
+     */
+    private void initializeTable() throws SQLException {
+        try (final Statement stmt = connection.createStatement()) {
+            final String createTable = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+                    "file_path TEXT PRIMARY KEY, " +
+                    "modified_time TIMESTAMP, " +
+                    "last_verified TIMESTAMP)";
+            stmt.execute(createTable);
+        }
+    }
+
+    /**
+     * Cleans the database by removing records where last_verified is older than the threshold.
+     */
+    public void cleanDatabase() {
+        final String deleteOldRecordsSQL = "DELETE FROM " + TABLE_NAME + " WHERE last_verified < ?";
+        try (final PreparedStatement stmt = connection.prepareStatement(deleteOldRecordsSQL)) {
+            stmt.setTimestamp(1, Timestamp.from(RECENCY_CLEANUP_THRESHOLD));
+            final int rowsDeleted = stmt.executeUpdate();
+            System.out.println("Cleaned up " + rowsDeleted + " old records from the database.");
+        } catch (final SQLException e) {
+            System.err.println("Error during database cleanup");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Returns whether the given file path should be skipped because it was verified recently.
+     *
+     * @param filePath the file path
+     * @return True if the file path should be skipped, False otherwise
+     */
+    public boolean shouldSkipFile(final String filePath) {
+        try (final PreparedStatement stmt = connection.prepareStatement("SELECT last_verified FROM " + TABLE_NAME + " WHERE file_path = ?")) {
+            stmt.setString(1, filePath);
+            final ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                final Instant lastVerified = rs.getTimestamp("last_verified").toInstant();
+                return lastVerified.isAfter(RECENCY_SKIP_THRESHOLD);
+            }
+        } catch (final SQLException e) {
+            e.printStackTrace();
+        }
+        throw new RuntimeException("Error getting last_verified for file path " + filePath);
+    }
+
+    /**
+     * Record that we have verified the file represented by the given record so that we do not check the same path again until the threshold.
+     *
+     * @param record the record
+     */
+    public void recordVerification(final FileRecord record) {
+        try (final PreparedStatement stmt = connection.prepareStatement(
+                "INSERT OR REPLACE INTO " + TABLE_NAME + " (file_path, modified_time, last_verified) VALUES (?, ?, ?)")) {
+            stmt.setString(1, String.valueOf(record.getFilePath()));
+            stmt.setTimestamp(2, Timestamp.from(record.getModifiedTime()));
+            stmt.setTimestamp(3, Timestamp.from(Instant.now()));
+            stmt.executeUpdate();
+        } catch (final SQLException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
