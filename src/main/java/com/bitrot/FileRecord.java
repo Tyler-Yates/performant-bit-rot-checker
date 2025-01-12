@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 
 import static com.bitrot.FileUtils.calculateFileId;
@@ -56,9 +55,8 @@ public final class FileRecord {
      * Returns the ID of the file which is a hash of the file path.
      *
      * @return the file ID
-     * @throws NoSuchAlgorithmException if there was a problem computing the hash
      */
-    public String getFileId() throws NoSuchAlgorithmException {
+    public String getFileId() {
         if (fileId == null) {
             fileId = calculateFileId(filePath);
         }

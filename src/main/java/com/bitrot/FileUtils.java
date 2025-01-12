@@ -28,8 +28,14 @@ public abstract class FileUtils {
         return crc.getValue();
     }
 
-    public static String calculateFileId(final String filePath) throws NoSuchAlgorithmException {
-        final MessageDigest digest = MessageDigest.getInstance("SHA-256");
+    public static String calculateFileId(final String filePath) {
+        final MessageDigest digest;
+        // We should not have to worry about SHA-256 not being found
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (final NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
         final byte[] hashBytes = digest.digest(filePath.getBytes());
         return bytesToHex(hashBytes).toLowerCase();
     }

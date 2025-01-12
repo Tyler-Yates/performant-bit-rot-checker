@@ -6,7 +6,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
-import java.security.NoSuchAlgorithmException;
 
 import static com.bitrot.FileUtils.computeCRC;
 import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
@@ -23,7 +22,7 @@ public class FileUtilsTest {
     }
 
     @Test
-    void testCalculateFileId() throws NoSuchAlgorithmException {
+    void testCalculateFileId() {
         final String filePath = "Some Folder\\Some File.txt";
 
         FileRecord fileRecord = new FileRecord(null, filePath);
