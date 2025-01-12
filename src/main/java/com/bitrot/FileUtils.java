@@ -85,7 +85,7 @@ public abstract class FileUtils {
         // Convert nanoseconds to microseconds (truncate the remainder) because this is what Python did
         final BigDecimal bigMillis = BigDecimal.valueOf(nanoAdjustment).divide(BigDecimal.valueOf(1_000), 0, RoundingMode.DOWN);
 
-        // Return the result as a native float
+        // Return the result as a native double
         final BigDecimal result = new BigDecimal(bigSeconds + "." + bigMillis);
         return result.doubleValue();
     }
