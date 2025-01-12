@@ -1,7 +1,5 @@
 package com.bitrot;
 
-import org.bson.Document;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,13 +28,14 @@ public class FileProcessor {
 //        }
 
         try {
-            Files.walk(directoryPath).filter(Files::isRegularFile).forEach(absoluteFilePath -> this.processFile(absoluteFilePath, directoryPath));
+            Files.walk(directoryPath).filter(Files::isRegularFile).forEach(absoluteFilePath
+                    -> this.processFile(absoluteFilePath, directoryPath, isImmutable));
         } catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private void processFile(final Path absoluteFilePath, final Path configPrefix) {
+    private void processFile(final Path absoluteFilePath, final Path configPrefix, final boolean isImmutable) {
         try {
             final String filePath = getFilePathFromAbsolutePath(absoluteFilePath, configPrefix);
             final FileRecord fileRecord = new FileRecord(absoluteFilePath, filePath);
@@ -45,7 +44,9 @@ public class FileProcessor {
                 return;
             }
 
-            final Document databaseDocument = findDocument();
+            final FileResult result = mongoManager.processFileRecord(fileRecord, isImmutable);
+            // TODO categorize
+            System.out.println(result);
         } catch (final Exception e) {
             e.printStackTrace();
         }

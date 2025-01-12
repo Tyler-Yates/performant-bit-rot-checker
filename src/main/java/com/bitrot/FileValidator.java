@@ -8,8 +8,7 @@ public class FileValidator {
         final Config config = Config.readConfig();
 
         final RecencyManager recencyManager = new RecencyManager();
-        //final MongoManager mongoManager = new MongoManager("mongodb://localhost:27017");
-        final MongoManager mongoManager = null;
+        final MongoManager mongoManager = new MongoManager(config.getMongoConnectionString());
 
         // Clean up the database before we start
         recencyManager.cleanDatabase();

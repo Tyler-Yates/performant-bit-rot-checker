@@ -10,6 +10,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.regex.Pattern;
 
 import static com.bitrot.Constants.*;
 
@@ -57,7 +58,7 @@ public class RecencyManager {
     public void cleanDatabase() {
         final String deleteOldRecordsSQL = "DELETE FROM " + TABLE_NAME + " WHERE last_verified < ?";
         try (final PreparedStatement stmt = connection.prepareStatement(deleteOldRecordsSQL)) {
-            stmt.setTimestamp(1, Timestamp.from(RECENCY_CLEANUP_THRESHOLD));
+            stmt.setTimestamp(1, Timestamp.from(DELETE_RECENCY_ENTRIES_OLDER_THAN));
             final int rowsDeleted = stmt.executeUpdate();
             System.out.println("Cleaned up " + rowsDeleted + " old records from the database.");
         } catch (final SQLException e) {
@@ -74,7 +75,7 @@ public class RecencyManager {
      */
     public boolean shouldSkipFile(final FileRecord fileRecord) {
         // Check each part of the path for the filters
-        for (final String part : fileRecord.getAbsoluteFilePath().toString().split(PATH_SEPARATOR)) {
+        for (final String part : fileRecord.getAbsoluteFilePath().toString().split(Pattern.quote(PATH_SEPARATOR))) {
             for (String prefix : SKIP_PREFIXES) {
                 if (part.startsWith(prefix)) {
                     return true;
@@ -94,7 +95,9 @@ public class RecencyManager {
             final ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 final Instant lastVerified = rs.getTimestamp("last_verified").toInstant();
-                return lastVerified.isAfter(RECENCY_SKIP_THRESHOLD);
+                return lastVerified.isAfter(SKIP_FILES_CHECKED_SINCE);
+            } else {
+                return false;
             }
         } catch (final SQLException e) {
             e.printStackTrace();
@@ -117,5 +120,22 @@ public class RecencyManager {
         } catch (final SQLException | IOException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Returns whether the file record is too new to save to the database or not.
+     *
+     * @param fileRecord the file record
+     * @return True if it is too new, otherwise False
+     */
+    public static boolean fileIsTooNewToSaveToDatabase(final FileRecord fileRecord) {
+        try {
+            final Instant creationTime = fileRecord.getFileCreationTime();
+            return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
+
+        return true;
     }
 }

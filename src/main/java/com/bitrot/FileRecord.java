@@ -69,14 +69,14 @@ public final class FileRecord {
     }
 
     /**
-     * Returns the CRC of the file.
+     * Returns the checksum (CRC) of the file.
      * This file is calculated lazily and only once. This means that if the file is modified during program execution
      * there could be problems!
      *
      * @return the CRC as a string
      * @throws IOException if there was a problem calculating the CRC
      */
-    public Long getCrc() throws IOException {
+    public Long getChecksum() throws IOException {
         if (crc == null) {
             crc = computeCRC(absoluteFilePath);
         }
@@ -99,15 +99,18 @@ public final class FileRecord {
     }
 
     /**
-     * Returns the modified time (mtime) of the file as a double.
+     * Returns the modified time (mtime) of the file as a long representing the seconds since the epoch.
+     * Not all file systems have the same resolution and Python doesn't have the same precision as Java.
+     * Use second resolution as this is good enough and should work everywhere.
+     * <p>
      * This is used when talking to the database.
      * This calls {@link #getModifiedInstant()} under the hood.
      *
-     * @return the modified time as a double
+     * @return the modified time as a long
      * @throws IOException if there was a problem getting the timestamp
      */
-    public double getMTime() throws IOException {
-        return instantToDouble(getModifiedInstant());
+    public long getMTimeSeconds() throws IOException {
+        return getModifiedInstant().getEpochSecond();
     }
 
     /**

@@ -62,31 +62,11 @@ public abstract class FileUtils {
      */
     public static String getFilePathFromAbsolutePath(final Path absoluteFilePath, final Path configPrefix) {
         if (absoluteFilePath.startsWith(configPrefix)) {
-            // Remove the prefix and return the remaining path as a string
-            return configPrefix.relativize(absoluteFilePath).toString();
+            // Remove the prefix and return the remaining path as a string.
+            // We need to prepend with a path separator because that is what Python did.
+            return "\\" + configPrefix.relativize(absoluteFilePath);
         } else {
             throw new IllegalArgumentException("Absolute path " + absoluteFilePath + " does not start with " + configPrefix);
         }
-    }
-
-    /**
-     * The old version of this program used Python and os.path.getmtime returns a float. Since Java uses Instant, we
-     * need a way to convert that to double or have to redo the whole existing database.
-     *
-     * @param instant the instant to convert
-     * @return the corresponding double value
-     */
-    public static double instantToDouble(final Instant instant) {
-        final long epochSeconds = instant.getEpochSecond();
-        final int nanoAdjustment = instant.getNano();
-
-        // Convert epoch seconds to BigDecimal to avoid losing precision
-        final BigDecimal bigSeconds = BigDecimal.valueOf(epochSeconds);
-        // Convert nanoseconds to microseconds (truncate the remainder) because this is what Python did
-        final BigDecimal bigMicros = BigDecimal.valueOf(nanoAdjustment).divide(BigDecimal.valueOf(1_000), 0, RoundingMode.DOWN);
-
-        // Return the result as a native double
-        final BigDecimal result = new BigDecimal(bigSeconds + "." + bigMicros);
-        return result.doubleValue();
     }
 }

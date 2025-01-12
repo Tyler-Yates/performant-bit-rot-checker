@@ -7,8 +7,9 @@ import java.util.List;
 public interface Constants {
     String CONFIG_FILE_NAME = "config.json";
 
-    Instant RECENCY_CLEANUP_THRESHOLD = Instant.now().minus(1, ChronoUnit.YEARS);
-    Instant RECENCY_SKIP_THRESHOLD = Instant.now().minus(90, ChronoUnit.DAYS);
+    Instant DELETE_RECENCY_ENTRIES_OLDER_THAN = Instant.now().minus(365, ChronoUnit.DAYS);
+    Instant SKIP_FILES_CHECKED_SINCE = Instant.now().minus(90, ChronoUnit.DAYS);
+    Instant DO_NOT_SAVE_FILES_NEWER_THAN = Instant.now().minus(1, ChronoUnit.DAYS);
 
     // Prefix strings to skip when processing files.
     // Each prefix is evaluated for every part of the path.
