@@ -7,6 +7,9 @@ import java.util.List;
 public interface Constants {
     String CONFIG_FILE_NAME = "config.json";
 
+    int THREADS = 16;
+    int CRC_BUFFER_SIZE = 4096 * 1024;
+
     Instant DELETE_RECENCY_ENTRIES_OLDER_THAN = Instant.now().minus(365, ChronoUnit.DAYS);
     Instant SKIP_FILES_CHECKED_SINCE = Instant.now().minus(90, ChronoUnit.DAYS);
     Instant DO_NOT_SAVE_FILES_NEWER_THAN = Instant.now().minus(1, ChronoUnit.DAYS);

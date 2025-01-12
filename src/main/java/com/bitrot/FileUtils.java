@@ -3,19 +3,24 @@ package com.bitrot;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.util.Formatter;
 import java.util.zip.CRC32;
 
-public abstract class FileUtils {
-    private static final int BUFFER_SIZE = 8192;
+import static com.bitrot.Constants.CRC_BUFFER_SIZE;
 
-    public static long computeCRC(final Path filePath) throws IOException {
+public abstract class FileUtils {
+    /**
+     * Compute the CRC checksum for a given file path.
+     * This method is synchronized in order to be kind to the disk.
+     *
+     * @param filePath the file path
+     * @return the CRC as a long value
+     * @throws IOException if there was an error reading the file
+     */
+    public static synchronized long computeCRC(final Path filePath) throws IOException {
         try (final FileInputStream fis = new FileInputStream(filePath.toFile())) {
             return computeCRC(fis);
         }
@@ -23,7 +28,7 @@ public abstract class FileUtils {
 
     public static long computeCRC(final InputStream inputStream) throws IOException {
         final CRC32 crc = new CRC32();
-        final byte[] buffer = new byte[BUFFER_SIZE];
+        final byte[] buffer = new byte[CRC_BUFFER_SIZE];
         int bytesRead;
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             crc.update(buffer, 0, bytesRead);
@@ -56,7 +61,7 @@ public abstract class FileUtils {
      * Returns the file path given the absolute path to a file and its prefix path from config.
      *
      * @param absoluteFilePath the absolute path
-     * @param configPrefix the prefix path from config
+     * @param configPrefix     the prefix path from config
      * @return the file path
      * @throws IllegalArgumentException if the absolute path does not start with the prefix
      */

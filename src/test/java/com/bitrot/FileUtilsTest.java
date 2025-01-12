@@ -6,9 +6,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
-import java.time.Instant;
 
-import static com.bitrot.FileUtils.*;
+import static com.bitrot.FileUtils.computeCRC;
+import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -25,11 +25,11 @@ public class FileUtilsTest {
     void testCalculateFileId() {
         final String filePath = "Some Folder\\Some File.txt";
 
-        FileRecord fileRecord = new FileRecord(null, filePath);
+        FileRecord fileRecord = new FileRecord(null, filePath, false);
         assertEquals("2f8f4b58d30d87cf5b95e7d1d17c971b5924fb1a041c6620e8c262c47beb4b26", fileRecord.getFileId());
 
         // File ID should NOT be influenced by the absolute file path
-        fileRecord = new FileRecord(Paths.get("C:\\" + filePath), filePath);
+        fileRecord = new FileRecord(Paths.get("C:\\" + filePath), filePath, false);
         assertEquals("2f8f4b58d30d87cf5b95e7d1d17c971b5924fb1a041c6620e8c262c47beb4b26", fileRecord.getFileId());
     }
 

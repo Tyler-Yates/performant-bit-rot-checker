@@ -113,7 +113,7 @@ public class RecencyManager {
     public void recordVerification(final FileRecord record) {
         try (final PreparedStatement stmt = connection.prepareStatement(
                 "INSERT OR REPLACE INTO " + TABLE_NAME + " (absolute_file_path, modified_time, last_verified) VALUES (?, ?, ?)")) {
-            stmt.setString(1, String.valueOf(record.getFilePath()));
+            stmt.setString(1, String.valueOf(record.getAbsoluteFilePath()));
             stmt.setTimestamp(2, Timestamp.from(record.getModifiedInstant()));
             stmt.setTimestamp(3, Timestamp.from(Instant.now()));
             stmt.executeUpdate();

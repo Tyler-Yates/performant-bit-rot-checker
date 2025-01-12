@@ -1,3 +1,3 @@
 package com.bitrot;
 
-record FileResult(Result result, String message) {}
+public record FileResult(Result result, String message) {}

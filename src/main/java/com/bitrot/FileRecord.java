@@ -12,15 +12,18 @@ import static com.bitrot.FileUtils.*;
 public final class FileRecord {
     private final String filePath;
     private final Path absoluteFilePath;
-    private String fileId;
 
+    // Lazy fields that are low-cost on the disk
     private Instant modifiedTime = null;
     private Instant createdTime = null;
     private Long crc = null;
+
+    // Lazy fields we don't want to preload
     private Long size = null;
+    private String fileId = null;
 
     /**
-     * We distinguish between teh absolute file path and the relative file path.
+     * We distinguish between the absolute file path and the relative file path.
      * This allows us to verify files on different machines saved on different drives.
      * {@code filePath} should be used for any logic that interacts with the database.
      * {@code absoluteFilePath} should be used for any logic that interacts with the disk.
@@ -31,10 +34,21 @@ public final class FileRecord {
      *
      * @param absoluteFilePath the absolute path of the file
      * @param filePath         the relative path of the file ignoring the prefix
+     * @param preLoad         if true, will preload the optional fields besides CRC and fileID
      */
-    public FileRecord(final Path absoluteFilePath, final String filePath) {
+    public FileRecord(final Path absoluteFilePath, final String filePath, final boolean preLoad) {
         this.filePath = filePath;
         this.absoluteFilePath = absoluteFilePath;
+
+        if (preLoad) {
+            try {
+                getModifiedInstant();
+                getFileCreationTime();
+                getSize();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**
@@ -53,6 +67,10 @@ public final class FileRecord {
      */
     public Path getAbsoluteFilePath() {
         return absoluteFilePath;
+    }
+
+    public String getLogIdentifier() {
+        return "(" + absoluteFilePath + ", " + getFileId() + ")";
     }
 
     /**
