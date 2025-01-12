@@ -6,8 +6,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 
-import static com.bitrot.FileUtils.calculateFileId;
-import static com.bitrot.FileUtils.computeCRC;
+import static com.bitrot.FileUtils.*;
 
 public final class FileRecord {
     private final String filePath;
@@ -81,13 +80,24 @@ public final class FileRecord {
     }
 
     /**
-     * Returns the modified timestamp of the file. This makes a call to the disk every time it is called.
+     * Returns the modified time of the file as an Instant. This makes a call to the disk every time it is called.
      *
-     * @return the modified timestamp
+     * @return the modified time as an Instant
      * @throws IOException if there was a problem getting the timestamp
      */
-    public Instant getModifiedTime() throws IOException {
+    public Instant getModifiedInstant() throws IOException {
         final FileTime fileTime = Files.getLastModifiedTime(absoluteFilePath);
         return fileTime.toInstant();
+    }
+
+    /**
+     * Returns the modified time (mtime) of the file as a double. This is used when talking to the database.
+     * This makes a call to the disk every time.
+     *
+     * @return the modified time as a double
+     * @throws IOException if there was a problem getting the timestamp
+     */
+    public double getMTime() throws IOException {
+        return instantToDouble(getModifiedInstant());
     }
 }
