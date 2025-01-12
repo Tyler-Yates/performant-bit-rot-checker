@@ -3,9 +3,12 @@ package com.bitrot;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.util.Formatter;
 import java.util.zip.CRC32;
 
@@ -64,5 +67,26 @@ public abstract class FileUtils {
         } else {
             throw new IllegalArgumentException("Absolute path " + absoluteFilePath + " does not start with " + configPrefix);
         }
+    }
+
+    /**
+     * The old version of this program used Python and os.getmtime returns a float. Since Java uses Instant, we need
+     * a way to convert that to double or have to redo the whole existing database.
+     *
+     * @param instant the instant to convert
+     * @return the corresponding double value
+     */
+    public static double instantToFloat(final Instant instant) {
+        final long epochSeconds = instant.getEpochSecond();
+        final int nanoAdjustment = instant.getNano();
+
+        // Convert epoch seconds to BigDecimal to avoid losing precision
+        final BigDecimal bigSeconds = BigDecimal.valueOf(epochSeconds);
+        // Convert nanoseconds to microseconds (truncate the remainder) because this is what Python did
+        final BigDecimal bigMillis = BigDecimal.valueOf(nanoAdjustment).divide(BigDecimal.valueOf(1_000), 0, RoundingMode.DOWN);
+
+        // Return the result as a native float
+        final BigDecimal result = new BigDecimal(bigSeconds + "." + bigMillis);
+        return result.doubleValue();
     }
 }

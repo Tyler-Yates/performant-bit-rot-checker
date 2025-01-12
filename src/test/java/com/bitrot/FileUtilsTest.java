@@ -6,9 +6,9 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.time.Instant;
 
-import static com.bitrot.FileUtils.computeCRC;
-import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
+import static com.bitrot.FileUtils.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -47,5 +47,11 @@ public class FileUtilsTest {
         // The absolute file path does not start with the prefix so this should be an error
         assertThrows(IllegalArgumentException.class, () -> getFilePathFromAbsolutePath(Paths.get("C:\\dir1\\file1.txt"), Paths.get("Z:\\")));
         assertThrows(IllegalArgumentException.class, () -> getFilePathFromAbsolutePath(Paths.get("C:\\dir1\\file1.txt"), Paths.get("C:\\dir2")));
+    }
+
+    @Test
+    void testInstantToFloat() {
+        final Instant instant = Instant.parse("2025-01-04T04:44:31.816606100Z");
+        assertEquals(1735965871.816606, instantToFloat(instant));
     }
 }
