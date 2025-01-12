@@ -70,8 +70,8 @@ public abstract class FileUtils {
     }
 
     /**
-     * The old version of this program used Python and os.getmtime returns a float. Since Java uses Instant, we need
-     * a way to convert that to double or have to redo the whole existing database.
+     * The old version of this program used Python and os.path.getmtime returns a float. Since Java uses Instant, we
+     * need a way to convert that to double or have to redo the whole existing database.
      *
      * @param instant the instant to convert
      * @return the corresponding double value
