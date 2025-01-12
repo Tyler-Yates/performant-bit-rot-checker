@@ -1,55 +1,53 @@
 package com.bitrot;
 
+import org.bson.Document;
+
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 
 public class FileProcessor {
-    private final RecencyManager dbManager;
+    private final RecencyManager recencyManager;
     private final MongoManager mongoManager;
 
-    public FileProcessor(final RecencyManager dbManager, final MongoManager mongoManager) {
-        this.dbManager = dbManager;
+    public FileProcessor(final RecencyManager recencyManager, final MongoManager mongoManager) {
+        this.recencyManager = recencyManager;
         this.mongoManager = mongoManager;
     }
 
-    public void processFiles(final String directoryPath) {
-        final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    public void processFiles(final Path directoryPath, final boolean isImmutable) {
+//        final ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+//        try {
+//            Files.walk(Paths.get(directoryPath)).filter(Files::isRegularFile).forEach(file -> {
+//                executor.submit(() -> processFile(file));
+//            });
+//        } catch (final Exception e) {
+//            e.printStackTrace();
+//        } finally {
+//            executor.shutdown();
+//        }
+
         try {
-            Files.walk(Paths.get(directoryPath)).filter(Files::isRegularFile).forEach(file -> {
-                executor.submit(() -> processFile(file));
-            });
-        } catch (final Exception e) {
-            e.printStackTrace();
-        } finally {
-            executor.shutdown();
+            Files.walk(directoryPath).filter(Files::isRegularFile).forEach(absoluteFilePath -> this.processFile(absoluteFilePath, directoryPath));
+        } catch (final IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private void processFile(final Path filePath) {
-//        try {
-//            final LocalDateTime lastVerified = dbManager.getLastVerified(filePath.toString());
-//            if (lastVerified != null && lastVerified.isAfter(LocalDateTime.now().minusDays(90))) {
-//                return;
-//            }
-//
-//            final String computedCrc = FileUtils.computeCRC(filePath);
-//            final String storedCrc = mongoManager.getStoredCRC(filePath.toString());
-//
-//            if (computedCrc != null && computedCrc.equals(storedCrc)) {
-//                dbManager.updateRecord(new FileRecord(filePath.toString(), computedCrc, LocalDateTime.now()));
-//            } else {
-//                System.err.println("CRC mismatch for file: " + filePath);
-//            }
-//        } catch (final Exception e) {
-//            e.printStackTrace();
-//        }
-    }
+    private void processFile(final Path absoluteFilePath, final Path configPrefix) {
+        try {
+            final String filePath = getFilePathFromAbsolutePath(absoluteFilePath, configPrefix);
+            final FileRecord fileRecord = new FileRecord(absoluteFilePath, filePath);
+            if (recencyManager.shouldSkipFile(fileRecord)) {
+                System.out.println("Skipping file " + absoluteFilePath);
+                return;
+            }
 
-    public static boolean fileExists(final String filePath) {
-        return Files.exists(Paths.get(filePath));
+            final Document databaseDocument = findDocument();
+        } catch (final Exception e) {
+            e.printStackTrace();
+        }
     }
 }

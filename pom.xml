@@ -64,6 +64,13 @@
             <version>5.11.3</version>
             <scope>test</scope>
         </dependency>
+
+        <!-- JSpecify for annotations -->
+        <dependency>
+            <groupId>org.jspecify</groupId>
+            <artifactId>jspecify</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>

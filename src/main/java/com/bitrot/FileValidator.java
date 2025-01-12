@@ -1,15 +1,29 @@
 package com.bitrot;
 
+import java.io.IOException;
+import java.nio.file.Paths;
+
 public class FileValidator {
-    public static void main(final String[] args) {
-        final RecencyManager dbManager = new RecencyManager();
-        final MongoManager mongoManager = new MongoManager("mongodb://localhost:27017");
+    public static void main(final String[] args) throws IOException {
+        final Config config = Config.readConfig();
 
-        // Clean up the database
-        dbManager.cleanDatabase();
+        final RecencyManager recencyManager = new RecencyManager();
+        //final MongoManager mongoManager = new MongoManager("mongodb://localhost:27017");
+        final MongoManager mongoManager = null;
 
-        // Process files
-        final FileProcessor processor = new FileProcessor(dbManager, mongoManager);
-        processor.processFiles("path/to/your/files");
+        // Clean up the database before we start
+        recencyManager.cleanDatabase();
+
+        final FileProcessor processor = new FileProcessor(recencyManager, mongoManager);
+
+        // Go through the mutable paths first
+        for (final String mutablePath : config.getMutablePaths()) {
+            processor.processFiles(Paths.get(mutablePath), false);
+        }
+
+        // Then the immutable paths
+        for (final String immutablePath : config.getImmutablePaths()) {
+            processor.processFiles(Paths.get(immutablePath), true);
+        }
     }
 }
