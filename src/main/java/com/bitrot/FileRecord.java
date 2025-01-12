@@ -3,6 +3,7 @@ package com.bitrot;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 
@@ -12,7 +13,11 @@ public final class FileRecord {
     private final String filePath;
     private final Path absoluteFilePath;
     private String fileId;
+
+    private Instant modifiedTime = null;
+    private Instant createdTime = null;
     private Long crc = null;
+    private Long size = null;
 
     /**
      * We distinguish between teh absolute file path and the relative file path.
@@ -75,29 +80,62 @@ public final class FileRecord {
         if (crc == null) {
             crc = computeCRC(absoluteFilePath);
         }
-
         return crc;
     }
 
     /**
-     * Returns the modified time of the file as an Instant. This makes a call to the disk every time it is called.
+     * Returns the modified time of the file as an Instant.
+     * This value is calculated lazily and only once.
      *
      * @return the modified time as an Instant
      * @throws IOException if there was a problem getting the timestamp
      */
     public Instant getModifiedInstant() throws IOException {
-        final FileTime fileTime = Files.getLastModifiedTime(absoluteFilePath);
-        return fileTime.toInstant();
+        if (modifiedTime == null) {
+            final FileTime modifiedFileTime = Files.getLastModifiedTime(absoluteFilePath);
+            modifiedTime = modifiedFileTime.toInstant();
+        }
+        return modifiedTime;
     }
 
     /**
-     * Returns the modified time (mtime) of the file as a double. This is used when talking to the database.
-     * This makes a call to the disk every time.
+     * Returns the modified time (mtime) of the file as a double.
+     * This is used when talking to the database.
+     * This calls {@link #getModifiedInstant()} under the hood.
      *
      * @return the modified time as a double
      * @throws IOException if there was a problem getting the timestamp
      */
     public double getMTime() throws IOException {
         return instantToDouble(getModifiedInstant());
+    }
+
+    /**
+     * Get the creation time of the file as an Instant.
+     * This value is calculated lazily and only once.
+     *
+     * @return the creation time
+     * @throws IOException if there was a problem getting the timestamp
+     */
+    public Instant getFileCreationTime() throws IOException {
+        if (createdTime == null) {
+            final FileTime fileCreatedTime = Files.readAttributes(absoluteFilePath, BasicFileAttributes.class).creationTime();
+            createdTime = fileCreatedTime.toInstant();
+        }
+        return createdTime;
+    }
+
+    /**
+     * Get the size of the file in bytes.
+     * This value is calculated lazily and only once.
+     *
+     * @return the size in bytes
+     * @throws IOException if there was a problem getting the size
+     */
+    public long getSize() throws IOException {
+        if (size == null) {
+            size = Files.size(absoluteFilePath);
+        }
+        return size;
     }
 }
