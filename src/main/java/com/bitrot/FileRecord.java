@@ -7,7 +7,8 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 
-import static com.bitrot.FileUtils.*;
+import static com.bitrot.FileUtils.calculateFileId;
+import static com.bitrot.FileUtils.computeCRC;
 
 public final class FileRecord {
     private final String filePath;

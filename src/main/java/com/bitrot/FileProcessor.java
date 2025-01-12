@@ -15,18 +15,25 @@ import java.util.stream.Stream;
 import static com.bitrot.Constants.THREADS;
 import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 
+@SuppressWarnings("CallToPrintStackTrace")
 public class FileProcessor {
-    private final RecencyManager recencyManager;
+    private final SkipUtil skipUtil;
     private final MongoManager mongoManager;
 
     private ExecutorService executor;
 
-    public FileProcessor(final RecencyManager recencyManager, final MongoManager mongoManager) {
-        this.recencyManager = recencyManager;
+    public FileProcessor(final SkipUtil skipUtil, final MongoManager mongoManager) {
+        this.skipUtil = skipUtil;
         this.mongoManager = mongoManager;
     }
 
     public void processFiles(final Path directoryPath, final boolean isImmutable) {
+        if (isImmutable) {
+            System.out.println("Processing immutable path " + directoryPath);
+        } else {
+            System.out.println("Processing mutable path " + directoryPath);
+        }
+
         executor = Executors.newFixedThreadPool(THREADS);
         final List<Future<FileResult>> futures = new ArrayList<>();
 
@@ -73,7 +80,7 @@ public class FileProcessor {
     }
 
     private FileResult getResult(final FileRecord fileRecord, final boolean isImmutable) throws IOException {
-        if (recencyManager.shouldSkipFile(fileRecord)) {
+        if (skipUtil.shouldSkipFile(fileRecord)) {
             final String message = "Skipping file " + fileRecord.getAbsoluteFilePath();
             System.out.println(message);
             return new FileResult(Result.SKIP, message);
@@ -82,7 +89,7 @@ public class FileProcessor {
         final FileResult result = mongoManager.processFileRecord(fileRecord, isImmutable);
         System.out.println(result.result() + ": " + result.message());
         if (result.result() == Result.PASS) {
-            recencyManager.recordVerification(fileRecord);
+            skipUtil.recordVerification(fileRecord);
         }
         return result;
     }

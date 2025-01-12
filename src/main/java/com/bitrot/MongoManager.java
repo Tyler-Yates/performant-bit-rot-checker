@@ -20,7 +20,7 @@ import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static com.bitrot.Constants.*;
-import static com.bitrot.RecencyManager.fileIsTooNewToSaveToDatabase;
+import static com.bitrot.SkipUtil.fileIsTooNewToSaveToDatabase;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class MongoManager {

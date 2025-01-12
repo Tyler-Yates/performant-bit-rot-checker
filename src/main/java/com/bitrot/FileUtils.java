@@ -1,8 +1,8 @@
 package com.bitrot;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -21,19 +21,15 @@ public abstract class FileUtils {
      * @throws IOException if there was an error reading the file
      */
     public static synchronized long computeCRC(final Path filePath) throws IOException {
-        try (final FileInputStream fis = new FileInputStream(filePath.toFile())) {
-            return computeCRC(fis);
+        try (final InputStream inputStream = Files.newInputStream(filePath)) {
+            final CRC32 crc = new CRC32();
+            final byte[] buffer = new byte[CRC_BUFFER_SIZE];
+            int bytesRead;
+            while ((bytesRead = inputStream.read(buffer)) != -1) {
+                crc.update(buffer, 0, bytesRead);
+            }
+            return crc.getValue();
         }
-    }
-
-    public static long computeCRC(final InputStream inputStream) throws IOException {
-        final CRC32 crc = new CRC32();
-        final byte[] buffer = new byte[CRC_BUFFER_SIZE];
-        int bytesRead;
-        while ((bytesRead = inputStream.read(buffer)) != -1) {
-            crc.update(buffer, 0, bytesRead);
-        }
-        return crc.getValue();
     }
 
     public static String calculateFileId(final String filePath) {

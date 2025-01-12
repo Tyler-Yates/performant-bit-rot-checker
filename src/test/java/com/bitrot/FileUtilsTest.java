@@ -1,10 +1,13 @@
 package com.bitrot;
 
+import com.google.common.jimfs.Configuration;
+import com.google.common.jimfs.Jimfs;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static com.bitrot.FileUtils.computeCRC;
@@ -15,10 +18,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 public class FileUtilsTest {
     @Test
     void testComputeCRC() throws IOException {
-        final String str = "test1";
-        final InputStream inputStream = new ByteArrayInputStream(str.getBytes());
-        final Long crc = computeCRC(inputStream);
-        assertEquals(2326977762L, crc);
+        // Create a temporary in-memory file system
+        try (final FileSystem fs = Jimfs.newFileSystem(Configuration.windows())) {
+            final Path path = fs.getPath("test1.txt");
+            Files.write(path, "test1".getBytes());
+
+            assertEquals(2326977762L, computeCRC(path));
+        }
     }
 
     @Test

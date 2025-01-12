@@ -70,6 +70,14 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- JUnit for in-memory file testing -->
+        <dependency>
+            <groupId>com.google.jimfs</groupId>
+            <artifactId>jimfs</artifactId>
+            <version>1.3.0</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- JSpecify for annotations -->
         <dependency>
             <groupId>org.jspecify</groupId>
