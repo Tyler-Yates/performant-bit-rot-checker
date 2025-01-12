@@ -1,6 +1,7 @@
 package com.bitrot;
 
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -10,8 +11,7 @@ import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
 
-import static com.bitrot.Constants.RECENCY_CLEANUP_THRESHOLD;
-import static com.bitrot.Constants.RECENCY_SKIP_THRESHOLD;
+import static com.bitrot.Constants.*;
 
 /**
  * Responsible for checking if we need to check a file, or we can skip it because it has already been checked recently.
@@ -19,6 +19,7 @@ import static com.bitrot.Constants.RECENCY_SKIP_THRESHOLD;
 public class RecencyManager {
     private static final String TABLE_NAME = "file_verification";
     private static final String FILE_NAME = TABLE_NAME + ".db";
+    private static final String PATH_SEPARATOR = FileSystems.getDefault().getSeparator();
 
     private final Connection connection;
 
@@ -34,7 +35,7 @@ public class RecencyManager {
     /**
      * Initialize the SQLite table if necessary.
      * <p>
-     * {@code file_path} is the primary key and is the string path to the file<br>
+     * {@code absolute_file_path} is the primary key and is the string path to the file<br>
      * {@code modified_time} is a timestamp representing the modified time of the file on disk<br>
      * {@code last_verified} is the timestamp when we last verified this file
      *
@@ -43,7 +44,7 @@ public class RecencyManager {
     private void initializeTable() throws SQLException {
         try (final Statement stmt = connection.createStatement()) {
             final String createTable = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
-                    "file_path TEXT PRIMARY KEY, " +
+                    "absolute_file_path TEXT PRIMARY KEY, " +
                     "modified_time TIMESTAMP, " +
                     "last_verified TIMESTAMP)";
             stmt.execute(createTable);
@@ -66,14 +67,30 @@ public class RecencyManager {
     }
 
     /**
-     * Returns whether the given file path should be skipped because it was verified recently.
+     * Returns whether the given file should be skipped because it was verified recently or matches a filter.
      *
-     * @param filePath the file path
+     * @param fileRecord the file record
      * @return True if the file path should be skipped, False otherwise
      */
-    public boolean shouldSkipFile(final String filePath) {
-        try (final PreparedStatement stmt = connection.prepareStatement("SELECT last_verified FROM " + TABLE_NAME + " WHERE file_path = ?")) {
-            stmt.setString(1, filePath);
+    public boolean shouldSkipFile(final FileRecord fileRecord) {
+        // Check each part of the path for the filters
+        for (final String part : fileRecord.getAbsoluteFilePath().toString().split(PATH_SEPARATOR)) {
+            for (String prefix : SKIP_PREFIXES) {
+                if (part.startsWith(prefix)) {
+                    return true;
+                }
+            }
+
+            for (String suffix : SKIP_SUFFIXES) {
+                if (part.endsWith(suffix)) {
+                    return true;
+                }
+            }
+        }
+
+        // Now look at the last time we verified this file
+        try (final PreparedStatement stmt = connection.prepareStatement("SELECT last_verified FROM " + TABLE_NAME + " WHERE absolute_file_path = ?")) {
+            stmt.setString(1, String.valueOf(fileRecord.getAbsoluteFilePath()));
             final ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
                 final Instant lastVerified = rs.getTimestamp("last_verified").toInstant();
@@ -82,7 +99,7 @@ public class RecencyManager {
         } catch (final SQLException e) {
             e.printStackTrace();
         }
-        throw new RuntimeException("Error getting last_verified for file path " + filePath);
+        throw new RuntimeException("Error getting last_verified for file with absolute path " + fileRecord.getAbsoluteFilePath());
     }
 
     /**
@@ -92,7 +109,7 @@ public class RecencyManager {
      */
     public void recordVerification(final FileRecord record) {
         try (final PreparedStatement stmt = connection.prepareStatement(
-                "INSERT OR REPLACE INTO " + TABLE_NAME + " (file_path, modified_time, last_verified) VALUES (?, ?, ?)")) {
+                "INSERT OR REPLACE INTO " + TABLE_NAME + " (absolute_file_path, modified_time, last_verified) VALUES (?, ?, ?)")) {
             stmt.setString(1, String.valueOf(record.getFilePath()));
             stmt.setTimestamp(2, Timestamp.from(record.getModifiedTime()));
             stmt.setTimestamp(3, Timestamp.from(Instant.now()));
