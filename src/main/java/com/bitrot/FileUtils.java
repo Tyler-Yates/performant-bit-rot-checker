@@ -76,7 +76,7 @@ public abstract class FileUtils {
      * @param instant the instant to convert
      * @return the corresponding double value
      */
-    public static double instantToFloat(final Instant instant) {
+    public static double instantToDouble(final Instant instant) {
         final long epochSeconds = instant.getEpochSecond();
         final int nanoAdjustment = instant.getNano();
 

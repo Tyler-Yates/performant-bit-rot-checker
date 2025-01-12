@@ -50,8 +50,8 @@ public class FileUtilsTest {
     }
 
     @Test
-    void testInstantToFloat() {
+    void testInstantToDouble() {
         final Instant instant = Instant.parse("2025-01-04T04:44:31.816606100Z");
-        assertEquals(1735965871.816606, instantToFloat(instant));
+        assertEquals(1735965871.816606, instantToDouble(instant));
     }
 }
