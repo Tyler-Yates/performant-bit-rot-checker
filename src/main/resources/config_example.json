@@ -1,0 +1,9 @@
+{
+  "mongoConnectionString": "mongodb+srv://",
+  "mutablePaths": [
+    "C:\\MyDir"
+  ],
+  "immutablePaths": [
+    "D:\\OtherDir"
+  ]
+}
