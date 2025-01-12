@@ -15,13 +15,13 @@ import java.util.zip.CRC32;
 public abstract class FileUtils {
     private static final int BUFFER_SIZE = 8192;
 
-    public static Long computeCRC(final Path filePath) throws IOException {
+    public static long computeCRC(final Path filePath) throws IOException {
         try (final FileInputStream fis = new FileInputStream(filePath.toFile())) {
             return computeCRC(fis);
         }
     }
 
-    public static Long computeCRC(final InputStream inputStream) throws IOException {
+    public static long computeCRC(final InputStream inputStream) throws IOException {
         final CRC32 crc = new CRC32();
         final byte[] buffer = new byte[BUFFER_SIZE];
         int bytesRead;
