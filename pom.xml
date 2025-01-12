@@ -26,6 +26,18 @@
             <version>5.2.1</version>
         </dependency>
 
+        <!-- Jackson Core and Databind for JSON processing -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.14.0</version>
+        </dependency>
+
         <!-- Apache Commons Codec for CRC computation -->
         <dependency>
             <groupId>commons-codec</groupId>

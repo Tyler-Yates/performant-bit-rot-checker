@@ -1,3 +1,4 @@
 .idea/
 target/
 config.json
+file_verification.db
