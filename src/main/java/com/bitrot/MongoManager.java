@@ -40,9 +40,10 @@ public class MongoManager {
         final MongoClient client = MongoClients.create(connection_string);
         collection = client.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
 
-        // Create a unique compound index with FILE_ID_KEY and MODIFIED_TIME_SECONDS_KEY
+        // Create a unique compound index with the file ID and two modified time fields.
+        // Order of the fields matters! That's why we do the most commonly queried fields first.
         // There should never be two documents with the same values for these fields.
-        collection.createIndex(Indexes.ascending(FILE_ID_KEY, MODIFIED_TIME_SECONDS_KEY),
+        collection.createIndex(Indexes.ascending(FILE_ID_KEY, MODIFIED_TIME_SECONDS_KEY, MODIFIED_TIME_NANOS_KEY),
                 new IndexOptions().unique(true));
 
         // Create an index for LAST_ACCESSED_KEY with expiration
