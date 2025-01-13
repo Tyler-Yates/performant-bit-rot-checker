@@ -5,5 +5,6 @@
   ],
   "immutablePaths": [
     "D:\\OtherDir"
-  ]
+  ],
+  "healthCheckUrl": ""
 }
