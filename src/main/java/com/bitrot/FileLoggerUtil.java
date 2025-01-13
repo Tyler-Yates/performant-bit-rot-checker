@@ -73,7 +73,9 @@ public class FileLoggerUtil {
      *
      * @param e the exception
      */
+    @SuppressWarnings("CallToPrintStackTrace")
     public static void logException(@NonNull final Exception e) {
-        log(e.getMessage());
+        e.printStackTrace();
+        log(" [" + e.getClass().getSimpleName() + "] " + e.getMessage());
     }
 }
