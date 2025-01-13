@@ -146,7 +146,8 @@ public class MongoManager {
         // as us.
         final Document filter = new Document()
                 .append(FILE_ID_KEY, fileRecord.getFileId())
-                .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds());
+                .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds())
+                .append(MODIFIED_TIME_NANOS_KEY, fileRecord.getMTimeNanos());
 
         final Document data = new Document()
                 .append(FILE_ID_KEY, fileRecord.getFileId())
