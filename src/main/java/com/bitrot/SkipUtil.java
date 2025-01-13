@@ -38,7 +38,7 @@ public class SkipUtil {
      * Initialize the SQLite table if necessary.
      * <p>
      * {@code absolute_file_path} is the primary key and is the string path to the file<br>
-     * {@code modified_time} is a timestamp representing the modified time of the file on disk<br>
+     * {@code modified_time_s} is a long representing the modified time in epoch seconds of the file on disk<br>
      * {@code last_verified} is the timestamp when we last verified this file
      *
      * @throws SQLException if there was an SQL error
@@ -47,7 +47,7 @@ public class SkipUtil {
         try (final Statement stmt = connection.createStatement()) {
             final String createTable = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
                     "absolute_file_path TEXT PRIMARY KEY, " +
-                    "modified_time TIMESTAMP, " +
+                    "modified_time_s INTEGER, " +
                     "last_verified TIMESTAMP)";
             stmt.execute(createTable);
         }
@@ -90,17 +90,25 @@ public class SkipUtil {
             }
         }
 
-        // Now look at the last time we verified this file
-        try (final PreparedStatement stmt = connection.prepareStatement("SELECT last_verified FROM " + TABLE_NAME + " WHERE absolute_file_path = ?")) {
+        // Now check the SQLite database for whether we should skip this file or not
+        try (final PreparedStatement stmt = connection.prepareStatement("SELECT last_verified, modified_time_s FROM " + TABLE_NAME + " WHERE absolute_file_path = ?")) {
             stmt.setString(1, String.valueOf(fileRecord.getAbsoluteFilePath()));
             final ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
+                // If the file has been modified since we last verified it, we should check it regardless of time elapsed.
+                final long modifiedTimestampAtLastVerification = rs.getLong("modified_time_s");
+                if (modifiedTimestampAtLastVerification != fileRecord.getMTimeSeconds()) {
+                    System.out.println("File " + fileRecord.getLogIdentifier() + " has been modified so will be checked.");
+                    return false;
+                }
+
+                // Skip files that were verified recently.
                 final Instant lastVerified = rs.getTimestamp("last_verified").toInstant();
                 return lastVerified.isAfter(SKIP_FILES_CHECKED_SINCE);
             } else {
                 return false;
             }
-        } catch (final SQLException e) {
+        } catch (final SQLException | IOException e) {
             e.printStackTrace();
         }
         throw new RuntimeException("Error getting last_verified for file with absolute path " + fileRecord.getAbsoluteFilePath());
@@ -113,9 +121,9 @@ public class SkipUtil {
      */
     public void recordVerification(final FileRecord record) {
         try (final PreparedStatement stmt = connection.prepareStatement(
-                "INSERT OR REPLACE INTO " + TABLE_NAME + " (absolute_file_path, modified_time, last_verified) VALUES (?, ?, ?)")) {
+                "INSERT OR REPLACE INTO " + TABLE_NAME + " (absolute_file_path, modified_time_s, last_verified) VALUES (?, ?, ?)")) {
             stmt.setString(1, String.valueOf(record.getAbsoluteFilePath()));
-            stmt.setTimestamp(2, Timestamp.from(record.getModifiedInstant()));
+            stmt.setLong(2, record.getMTimeSeconds());
             stmt.setTimestamp(3, Timestamp.from(Instant.now()));
             stmt.executeUpdate();
         } catch (final SQLException | IOException e) {
@@ -130,13 +138,16 @@ public class SkipUtil {
      * @return True if it is too new, otherwise False
      */
     public static boolean fileIsTooNewToSaveToDatabase(final FileRecord fileRecord) {
-        try {
-            final Instant creationTime = fileRecord.getFileCreationTime();
-            return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
-        } catch (final IOException e) {
-            e.printStackTrace();
-        }
+        // TODO revert this after testing
+        return false;
 
-        return true;
+//        try {
+//            final Instant creationTime = fileRecord.getFileCreationTime();
+//            return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
+//        } catch (final IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return true;
     }
 }

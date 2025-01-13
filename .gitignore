@@ -2,3 +2,4 @@
 target/
 config.json
 file_verification.sqlite
+logs/

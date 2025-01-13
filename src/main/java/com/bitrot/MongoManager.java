@@ -171,7 +171,7 @@ public class MongoManager {
             if (isImmutable && fileIsTooNewToSaveToDatabase(fileRecord)) {
                 return new FileResult(
                         Result.SKIP,
-                        "Immutable file " + fileRecord.getAbsoluteFilePath() + " skipped because it was created recently"
+                        "Immutable file " + fileRecord.getLogIdentifier() + " skipped because it was created recently"
                 );
             }
 
@@ -180,23 +180,26 @@ public class MongoManager {
         } else {
             // We have seen this record before so now check for any bit rot
             if (!fileRecord.getFileId().equals(databaseDocument.fileId())) {
-                throw new IllegalStateException("Fatal error! File ID mismatch!" +
-                        " Local File=" + fileRecord.getFileId() +
-                        " but Database File=" + databaseDocument.fileId());
+                throw new IllegalStateException("Fatal error! File ID mismatch for record " + fileRecord.getLogIdentifier() +
+                        ": Local=" + fileRecord.getFileId() +
+                        " but Database=" + databaseDocument.fileId());
             }
 
             if (fileRecord.getMTimeSeconds() != databaseDocument.mTimeSeconds()) {
-                return new FileResult(Result.FAIL, "File mtime_s mismatch! Local File=" + fileRecord.getMTimeSeconds() +
+                return new FileResult(Result.FAIL, "File mtime_s mismatch for record " + fileRecord.getLogIdentifier() +
+                        ": Local=" + fileRecord.getMTimeSeconds() +
                         " but Database=" + databaseDocument.mTimeSeconds());
             }
 
             if (fileRecord.getSize() != databaseDocument.size()) {
-                return new FileResult(Result.FAIL, "File size mismatch! Local File=" + fileRecord.getSize() +
+                return new FileResult(Result.FAIL, "File size mismatch for record " + fileRecord.getLogIdentifier() +
+                        ": Local=" + fileRecord.getSize() +
                         " but Database=" + databaseDocument.size());
             }
 
             if (fileRecord.getChecksum() != databaseDocument.checksum()) {
-                return new FileResult(Result.FAIL, "File CRC mismatch! Local File=" + fileRecord.getChecksum() +
+                return new FileResult(Result.FAIL, "File CRC mismatch for record " + fileRecord.getLogIdentifier() +
+                        ": Local=" + fileRecord.getChecksum() +
                         " but Database=" + databaseDocument.checksum());
             }
 
