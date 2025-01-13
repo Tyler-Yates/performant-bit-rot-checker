@@ -11,7 +11,6 @@ import static com.bitrot.Constants.*;
 /**
  * Responsible for checking if we need to check a file, or we can skip it because it has already been checked recently.
  */
-@SuppressWarnings("CallToPrintStackTrace")
 public class SkipUtil {
     private static final String TABLE_NAME = "file_verification";
     private static final String FILE_NAME = TABLE_NAME + ".sqlite";
@@ -58,7 +57,7 @@ public class SkipUtil {
             System.out.println("Cleaned up " + rowsDeleted + " old records from the database.");
         } catch (final SQLException e) {
             System.err.println("Error during database cleanup");
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -103,25 +102,26 @@ public class SkipUtil {
                 return false;
             }
         } catch (final SQLException | IOException e) {
-            e.printStackTrace();
+            System.err.println("Error getting last_verified, modified_time_s for file with absolute path " + fileRecord.getAbsoluteFilePath());
+            throw new RuntimeException(e);
         }
-        throw new RuntimeException("Error getting last_verified for file with absolute path " + fileRecord.getAbsoluteFilePath());
     }
 
     /**
      * Record that we have verified the file represented by the given record so that we do not check the same path again until the threshold.
      *
-     * @param record the record
+     * @param fileRecord the record
      */
-    public void recordVerification(final FileRecord record) {
+    public void recordVerification(final FileRecord fileRecord) {
         try (final PreparedStatement stmt = connection.prepareStatement(
                 "INSERT OR REPLACE INTO " + TABLE_NAME + " (absolute_file_path, modified_time_s, last_verified) VALUES (?, ?, ?)")) {
-            stmt.setString(1, String.valueOf(record.getAbsoluteFilePath()));
-            stmt.setLong(2, record.getMTimeSeconds());
+            stmt.setString(1, String.valueOf(fileRecord.getAbsoluteFilePath()));
+            stmt.setLong(2, fileRecord.getMTimeSeconds());
             stmt.setTimestamp(3, Timestamp.from(Instant.now()));
             stmt.executeUpdate();
         } catch (final SQLException | IOException e) {
-            e.printStackTrace();
+            System.err.println("Error getting last_verified for file with absolute path " + fileRecord.getAbsoluteFilePath());
+            throw new RuntimeException(e);
         }
     }
 
@@ -136,9 +136,8 @@ public class SkipUtil {
             final Instant creationTime = fileRecord.getFileCreationTime();
             return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
         } catch (final IOException e) {
-            e.printStackTrace();
+            System.err.println("Error calculating fileIsTooNewToSaveToDatabase() for file " + fileRecord.getAbsoluteFilePath());
+            throw new RuntimeException(e);
         }
-
-        return true;
     }
 }
