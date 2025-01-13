@@ -55,6 +55,9 @@ public class FileLoggerUtil {
                     message + System.lineSeparator(),
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND
             );
+
+            // Print to stdout
+            System.out.println("[FileLogger] " + message);
         } catch (final IOException e) {
             System.err.println("Failed to log message: " + e.getMessage());
         }

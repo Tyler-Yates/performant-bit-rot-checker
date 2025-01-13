@@ -25,6 +25,9 @@ public class Main {
             processor.processFiles(Paths.get(immutablePath), true);
         }
 
+        // Log the totals now that all paths are processed
+        processor.logTotals();
+
         // TODO hit health check
     }
 }

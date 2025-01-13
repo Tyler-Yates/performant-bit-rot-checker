@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -19,12 +21,15 @@ import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 public class FileProcessor {
     private final SkipUtil skipUtil;
     private final MongoManager mongoManager;
+    private final Map<Result, Integer> resultTotals;
 
     private ExecutorService executor;
 
     public FileProcessor(final SkipUtil skipUtil, final MongoManager mongoManager) {
         this.skipUtil = skipUtil;
         this.mongoManager = mongoManager;
+
+        resultTotals = new HashMap<>();
     }
 
     public void processFiles(final Path directoryPath, final boolean isImmutable) {
@@ -52,17 +57,24 @@ public class FileProcessor {
                 }
             }
 
-            // Process all the results
+            // Process all the results and add to the totals
             for (final Future<FileResult> future : futures) {
                 final FileResult result = future.get();
-
-                // TODO categorization and logging to a file
+                resultTotals.put(result.result(), resultTotals.getOrDefault(result.result(), 0) + 1);
             }
         } catch (final Exception e) {
             e.printStackTrace();
         } finally {
             executor.shutdown();
         }
+    }
+
+    public void logTotals() {
+        FileLoggerUtil.log("--------------------------");
+        FileLoggerUtil.log("Totals:");
+        FileLoggerUtil.log("PASS: " + resultTotals.getOrDefault(Result.PASS, 0) + " files");
+        FileLoggerUtil.log("FAIL: " + resultTotals.getOrDefault(Result.FAIL, 0) + " files");
+        FileLoggerUtil.log("SKIP: " + resultTotals.getOrDefault(Result.SKIP, 0) + " files");
     }
 
     @Nullable
