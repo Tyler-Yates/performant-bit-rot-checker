@@ -77,6 +77,10 @@ public class FileProcessor {
         FileLoggerUtil.log("SKIP: " + resultTotals.getOrDefault(Result.SKIP, 0) + " files");
     }
 
+    public boolean noFailures() {
+        return resultTotals.getOrDefault(Result.FAIL, 0) == 0;
+    }
+
     @Nullable
     private Future<FileResult> processFile(final Path absoluteFilePath, final Path configPrefix, final boolean isImmutable) {
         try {

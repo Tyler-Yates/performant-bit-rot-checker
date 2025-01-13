@@ -8,10 +8,12 @@ import java.util.List;
 
 import static com.bitrot.Constants.CONFIG_FILE_NAME;
 
+@SuppressWarnings("unused")  // We need the getters and setters for the ObjectMapper
 public class Config {
     private String mongoConnectionString;
     private List<String> mutablePaths;
     private List<String> immutablePaths;
+    private String healthCheckUrl;
 
     private Config() {}
 
@@ -27,7 +29,7 @@ public class Config {
         return mongoConnectionString;
     }
 
-    public void setMongoConnectionString(String mongoConnectionString) {
+    public void setMongoConnectionString(final String mongoConnectionString) {
         this.mongoConnectionString = mongoConnectionString;
     }
 
@@ -35,7 +37,7 @@ public class Config {
         return mutablePaths;
     }
 
-    public void setMutablePaths(List<String> mutablePaths) {
+    public void setMutablePaths(final List<String> mutablePaths) {
         this.mutablePaths = mutablePaths;
     }
 
@@ -43,7 +45,15 @@ public class Config {
         return immutablePaths;
     }
 
-    public void setImmutablePaths(List<String> immutablePaths) {
+    public void setImmutablePaths(final List<String> immutablePaths) {
         this.immutablePaths = immutablePaths;
+    }
+
+    public String getHealthCheckUrl() {
+        return healthCheckUrl;
+    }
+
+    public void setHealthCheckUrl(final String healthCheckUrl) {
+        this.healthCheckUrl = healthCheckUrl;
     }
 }
