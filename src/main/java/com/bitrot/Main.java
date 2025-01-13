@@ -20,6 +20,10 @@ public class Main {
 
         final FileProcessor processor = new FileProcessor(skipUtil, mongoManager);
 
+        FileLoggerUtil.log("Mutable paths: " + config.getMutablePaths());
+        FileLoggerUtil.log("Immutable paths: " + config.getImmutablePaths());
+        FileLoggerUtil.log("--------------------------");
+
         // Go through the mutable paths first
         for (final String mutablePath : config.getMutablePaths()) {
             processor.processFiles(Paths.get(mutablePath), false);
