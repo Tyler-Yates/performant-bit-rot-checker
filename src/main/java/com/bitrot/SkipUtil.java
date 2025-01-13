@@ -2,13 +2,7 @@ package com.bitrot;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Timestamp;
+import java.sql.*;
 import java.time.Instant;
 import java.util.regex.Pattern;
 
@@ -138,16 +132,13 @@ public class SkipUtil {
      * @return True if it is too new, otherwise False
      */
     public static boolean fileIsTooNewToSaveToDatabase(final FileRecord fileRecord) {
-        // TODO revert this after testing
-        return false;
+        try {
+            final Instant creationTime = fileRecord.getFileCreationTime();
+            return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
+        } catch (final IOException e) {
+            e.printStackTrace();
+        }
 
-//        try {
-//            final Instant creationTime = fileRecord.getFileCreationTime();
-//            return creationTime.isAfter(DO_NOT_SAVE_FILES_NEWER_THAN);
-//        } catch (final IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//        return true;
+        return true;
     }
 }

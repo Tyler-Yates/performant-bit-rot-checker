@@ -39,10 +39,10 @@ public class MongoManager {
         final MongoClient client = MongoClients.create(connection_string);
         collection = client.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
 
-        // Create a compound index with FILE_ID_KEY and MODIFIED_TIME_KEY
-        // TODO change this to use the new mtime_s field
-        //collection.createIndex(Indexes.ascending(FILE_ID_KEY, MODIFIED_TIME_KEY),
-        //        new IndexOptions().unique(true));
+        // Create a unique compound index with FILE_ID_KEY and MODIFIED_TIME_SECONDS_KEY
+        // There should never be two documents with the same values for these fields.
+        collection.createIndex(Indexes.ascending(FILE_ID_KEY, MODIFIED_TIME_SECONDS_KEY),
+                new IndexOptions().unique(true));
 
         // Create an index for LAST_ACCESSED_KEY with expiration
         collection.createIndex(Indexes.ascending(LAST_ACCESSED_KEY),
