@@ -133,6 +133,20 @@ public final class FileRecord {
     }
 
     /**
+     * Returns the nanosecond part of the modified time (mtime) of the file.
+     * This method goes hand-in-hand with {@link #getMTimeSeconds()}.
+     * <p>
+     * This is used when talking to the database.
+     * This calls {@link #getModifiedInstant()} under the hood.
+     *
+     * @return the modified time as a long
+     * @throws IOException if there was a problem getting the timestamp
+     */
+    public int getMTimeNanos() throws IOException {
+        return getModifiedInstant().getNano();
+    }
+
+    /**
      * Get the creation time of the file as an Instant.
      * This value is calculated lazily and only once.
      *

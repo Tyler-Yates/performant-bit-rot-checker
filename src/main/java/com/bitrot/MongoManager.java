@@ -27,6 +27,7 @@ public class MongoManager {
     static final String MONGO_ID_KEY = "_id";
     static final String FILE_ID_KEY = "file_id";
     static final String MODIFIED_TIME_SECONDS_KEY = "mtime_s";
+    static final String MODIFIED_TIME_NANOS_KEY = "mtime_ns";
     static final String SIZE_KEY = "size";
     static final String CHECKSUM_KEY = "checksum";
     static final String LAST_ACCESSED_KEY = "last_accessed";
@@ -149,6 +150,7 @@ public class MongoManager {
         final Document data = new Document()
                 .append(FILE_ID_KEY, fileRecord.getFileId())
                 .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds())
+                .append(MODIFIED_TIME_NANOS_KEY, fileRecord.getMTimeNanos())
                 .append(SIZE_KEY, fileRecord.getSize())
                 .append(CHECKSUM_KEY, fileRecord.getChecksum())
                 .append(LAST_ACCESSED_KEY, Instant.now());
@@ -203,8 +205,22 @@ public class MongoManager {
                         " but Database=" + databaseDocument.checksum());
             }
 
+            // The old Python-era documents are missing the mtime_ns field. Add that field if necessary.
+            if (databaseDocument.mTimeNanos() == null) {
+                addMtimeNanoFieldIfNecessary(databaseDocument, fileRecord);
+            }
+
             // If we have reached this point, we passed verification!
-            return new FileResult(Result.PASS, "File " + fileRecord.getAbsoluteFilePath() + " passed verification");
+            return new FileResult(Result.PASS, "File " + fileRecord.getLogIdentifier() + " passed verification");
         }
+    }
+
+    private void addMtimeNanoFieldIfNecessary(final DatabaseDocument databaseDocument, final FileRecord fileRecord) throws IOException {
+        final Document filter = new Document(MONGO_ID_KEY, databaseDocument.objectId());
+        final Document update = new Document("$set", new Document(MODIFIED_TIME_NANOS_KEY, fileRecord.getMTimeNanos()));
+
+        final UpdateResult updateResult = collection.updateOne(filter, update);
+
+        System.out.println("Found document missing mtime_ns field. Modified document count: " + updateResult.getModifiedCount());
     }
 }
