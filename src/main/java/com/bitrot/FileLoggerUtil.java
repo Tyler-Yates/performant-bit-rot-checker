@@ -1,7 +1,12 @@
 package com.bitrot;
 
+import org.jspecify.annotations.NonNull;
+
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -40,7 +45,7 @@ public class FileLoggerUtil {
      *
      * @param message The message to log
      */
-    public static void log(final String message) {
+    public static void log(@NonNull final String message) {
         try {
             // Write to latest.txt
             Files.writeString(
@@ -61,5 +66,14 @@ public class FileLoggerUtil {
         } catch (final IOException e) {
             System.err.println("Failed to log message: " + e.getMessage());
         }
+    }
+
+    /**
+     * Logs the given Exception to {@link #log(String)} but only the message and not the full stacktrace.
+     *
+     * @param e the exception
+     */
+    public static void logException(@NonNull final Exception e) {
+        log(e.getMessage());
     }
 }

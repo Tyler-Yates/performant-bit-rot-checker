@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -17,7 +18,6 @@ import java.util.stream.Stream;
 import static com.bitrot.Constants.THREADS;
 import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 
-@SuppressWarnings("CallToPrintStackTrace")
 public class FileProcessor {
     private final SkipUtil skipUtil;
     private final MongoManager mongoManager;
@@ -42,33 +42,39 @@ public class FileProcessor {
         executor = Executors.newFixedThreadPool(THREADS);
         final List<Future<FileResult>> futures = new ArrayList<>();
 
-        try {
-            // Walk through the directory and its subdirectories
-            try (final Stream<Path> paths = Files.walk(directoryPath)) {
-                for (final Path absoluteFilePath : (Iterable<Path>) paths::iterator) {
-                    // Only process regular files
-                    if (Files.isRegularFile(absoluteFilePath)) {
-                        // Submit the job to an executor since the heavy disk work is single threaded
-                        final Future<FileResult> future = processFile(absoluteFilePath, directoryPath, isImmutable);
+        try (final Stream<Path> paths = Files.walk(directoryPath)) {
+            paths.filter(Files::isRegularFile)  // Only process regular files
+                    .forEach(path -> {
+                        // Submit the job to an executor so we are not bottlenecked by all the MongoDB network calls.
+                        // The heavy disk work is synchronized so we do not have to worry about thrashing HDDs.
+                        final Future<FileResult> future = processFile(path, directoryPath, isImmutable);
                         if (future != null) {
                             futures.add(future);
                         }
-                    }
-                }
-            }
+                    });
+        } catch (final Exception e) {
+            FileLoggerUtil.logException(e);
+        } finally {
+            // This prevents new tasks from being submitted to the executor, but it still allows in-progress things to finish.
+            executor.shutdown();
+        }
 
-            // Process all the results and add to the totals
-            for (final Future<FileResult> future : futures) {
+        // Process all the Futures and add the results to the total counts.
+        // We should not need to call executor.awaitTermination() because every Future will have its get() method called,
+        // meaning that every task should be complete at the end of this for loop.
+        for (final Future<FileResult> future : futures) {
+            try {
                 final FileResult result = future.get();
                 resultTotals.put(result.result(), resultTotals.getOrDefault(result.result(), 0) + 1);
+            } catch (final InterruptedException | ExecutionException e) {
+                FileLoggerUtil.logException(e);
             }
-        } catch (final Exception e) {
-            e.printStackTrace();
-        } finally {
-            executor.shutdown();
         }
     }
 
+    /**
+     * Log the result totals to the log files.
+     */
     public void logTotals() {
         FileLoggerUtil.log("--------------------------");
         FileLoggerUtil.log("Totals:");
@@ -77,6 +83,11 @@ public class FileProcessor {
         FileLoggerUtil.log("SKIP: " + resultTotals.getOrDefault(Result.SKIP, 0) + " files");
     }
 
+    /**
+     * Returns whether this run had no failures.
+     *
+     * @return true if there were no failures, false otherwise
+     */
     public boolean noFailures() {
         return resultTotals.getOrDefault(Result.FAIL, 0) == 0;
     }
@@ -90,7 +101,7 @@ public class FileProcessor {
 
             return executor.submit(() -> getResult(fileRecord, isImmutable));
         } catch (final Exception e) {
-            e.printStackTrace();
+            FileLoggerUtil.logException(e);
             return null;
         }
     }
