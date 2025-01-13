@@ -2,8 +2,8 @@ package com.bitrot;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 
 import static com.bitrot.Constants.CONFIG_FILE_NAME;
@@ -18,11 +18,12 @@ public class Config {
     private Config() {}
 
     public static Config readConfig() throws IOException {
-        final ClassLoader classloader = Thread.currentThread().getContextClassLoader();
-        try (final InputStream is = classloader.getResourceAsStream(CONFIG_FILE_NAME)) {
-            final ObjectMapper objectMapper = new ObjectMapper();
-            return objectMapper.readValue(is, Config.class);
+        final File configFile = new File(CONFIG_FILE_NAME);
+        if (!configFile.exists()) {
+            throw new IOException("Config file not found: " + CONFIG_FILE_NAME);
         }
+
+        return new ObjectMapper().readValue(configFile, Config.class);
     }
 
     public String getMongoConnectionString() {

@@ -1,5 +1,6 @@
 .idea/
 target/
 config.json
+config.backup.json
 file_verification.sqlite
 logs/
