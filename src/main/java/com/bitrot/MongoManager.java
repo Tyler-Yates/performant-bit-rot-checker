@@ -188,9 +188,9 @@ public class MongoManager {
             }
 
             if (fileRecord.getMTimeSeconds() != databaseDocument.mTimeSeconds()) {
-                return new FileResult(Result.FAIL, "File mtime_s mismatch for record " + fileRecord.getLogIdentifier() +
-                        ": Local=" + fileRecord.getMTimeSeconds() +
-                        " but Database=" + databaseDocument.mTimeSeconds());
+                return new FileResult(Result.FAIL, "File modified time mismatch for record " + fileRecord.getLogIdentifier() +
+                        ": Local=" + getMTimeString(fileRecord.getMTimeSeconds(), fileRecord.getMTimeNanos()) +
+                        " but Database=" + getMTimeString(databaseDocument.mTimeSeconds(), databaseDocument.mTimeNanos()));
             }
 
             if (fileRecord.getSize() != databaseDocument.size()) {
@@ -222,5 +222,9 @@ public class MongoManager {
         final UpdateResult updateResult = collection.updateOne(filter, update);
 
         System.out.println("Found document missing mtime_ns field. Modified document count: " + updateResult.getModifiedCount());
+    }
+
+    private static String getMTimeString(final long mtimeSeconds, final int mtimeNanos) {
+        return "(seconds=" + mtimeSeconds + ", nanos=" + mtimeNanos + ")";
     }
 }

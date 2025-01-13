@@ -104,14 +104,16 @@ public class FileProcessor {
 
         final FileResult result = mongoManager.processFileRecord(fileRecord, isImmutable);
         final String message = result.result() + ": " + result.message();
-        System.out.println(message);
 
         if (result.result() == Result.PASS) {
+            System.out.println(message);
             // Only record successful verifications to the skip util
             skipUtil.recordVerification(fileRecord);
         } else if (result.result() == Result.FAIL) {
             // Log failures to disk so we can triage them
             FileLoggerUtil.log(message);
+        } else {
+            System.out.println(message);
         }
         return result;
     }
