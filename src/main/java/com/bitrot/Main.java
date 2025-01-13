@@ -33,8 +33,8 @@ public class Main {
         // Log the totals now that all paths are processed
         processor.logTotals();
 
-        if (processor.noFailures()) {
-            // If there are no failures, call the health check
+        if (processor.noFailures() && !FileLoggerUtil.encounteredException()) {
+            // If there are no failures or exceptions, call the health check
             callHealthCheck(config.getHealthCheckUrl());
         } else {
             // Otherwise exit with a non-zero status

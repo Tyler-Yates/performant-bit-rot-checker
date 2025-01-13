@@ -20,6 +20,8 @@ public class FileLoggerUtil {
     private static final Path DATED_FILE_PATH;
     private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
 
+    private static boolean encounteredException = false;
+
     // Initialize the logging infrastructure at program startup
     static {
         try {
@@ -70,12 +72,25 @@ public class FileLoggerUtil {
 
     /**
      * Logs the given Exception to {@link #log(String)} but only the message and not the full stacktrace.
+     * <p>
+     * !!! This will cause the program to not call the health check and exit with a non-zero code !!!
      *
      * @param e the exception
      */
     @SuppressWarnings("CallToPrintStackTrace")
     public static void logException(@NonNull final Exception e) {
+        encounteredException = true;
+
         e.printStackTrace();
         log(" [" + e.getClass().getSimpleName() + "] " + e.getMessage());
+    }
+
+    /**
+     * Returns whether we have encountered an Exception during this program execution.
+     *
+     * @return true if we have encountered an exception, false otherwise
+     */
+    public static boolean encounteredException() {
+        return encounteredException;
     }
 }
