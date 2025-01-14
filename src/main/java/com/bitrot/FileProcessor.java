@@ -21,7 +21,7 @@ import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 public class FileProcessor {
     private final SkipUtil skipUtil;
     private final MongoManager mongoManager;
-    private final Map<Result, Integer> resultTotals;
+    private final Map<Result, Integer> runTotals;
 
     private ExecutorService executor;
 
@@ -29,10 +29,10 @@ public class FileProcessor {
         this.skipUtil = skipUtil;
         this.mongoManager = mongoManager;
 
-        resultTotals = new HashMap<>();
+        runTotals = new HashMap<>();
     }
 
-    public void processFiles(final Path directoryPath, final boolean isImmutable) {
+    public Map<Result, Integer> processFiles(final Path directoryPath, final boolean isImmutable) {
         if (isImmutable) {
             System.out.println("Processing immutable path " + directoryPath);
         } else {
@@ -59,28 +59,36 @@ public class FileProcessor {
             executor.shutdown();
         }
 
-        // Process all the Futures and add the results to the total counts.
+        // Process all the Futures and add the results to the directory totals.
         // We should not need to call executor.awaitTermination() because every Future will have its get() method called,
         // meaning that every task should be complete at the end of this for loop.
+        final Map<Result, Integer> directoryTotals = new HashMap<>();
         for (final Future<FileResult> future : futures) {
             try {
                 final FileResult result = future.get();
-                resultTotals.put(result.result(), resultTotals.getOrDefault(result.result(), 0) + 1);
+                directoryTotals.put(result.result(), directoryTotals.getOrDefault(result.result(), 0) + 1);
             } catch (final InterruptedException | ExecutionException e) {
                 FileLoggerUtil.logException(e);
             }
         }
+
+        // Add the directory totals to the run total for logging at the very end.
+        directoryTotals.forEach((key, value) ->
+                runTotals.merge(key, value, Integer::sum)
+        );
+
+        return directoryTotals;
     }
 
     /**
-     * Log the result totals to the log files.
+     * Log the run totals to the log files.
      */
-    public void logTotals() {
+    public void logRunTotals() {
         FileLoggerUtil.log("--------------------------");
         FileLoggerUtil.log("Totals:");
-        FileLoggerUtil.log("PASS: " + resultTotals.getOrDefault(Result.PASS, 0) + " files");
-        FileLoggerUtil.log("FAIL: " + resultTotals.getOrDefault(Result.FAIL, 0) + " files");
-        FileLoggerUtil.log("SKIP: " + resultTotals.getOrDefault(Result.SKIP, 0) + " files");
+        FileLoggerUtil.log("PASS: " + runTotals.getOrDefault(Result.PASS, 0) + " files");
+        FileLoggerUtil.log("FAIL: " + runTotals.getOrDefault(Result.FAIL, 0) + " files");
+        FileLoggerUtil.log("SKIP: " + runTotals.getOrDefault(Result.SKIP, 0) + " files");
     }
 
     /**
@@ -89,7 +97,7 @@ public class FileProcessor {
      * @return true if there were no failures, false otherwise
      */
     public boolean noFailures() {
-        return resultTotals.getOrDefault(Result.FAIL, 0) == 0;
+        return runTotals.getOrDefault(Result.FAIL, 0) == 0;
     }
 
     @Nullable

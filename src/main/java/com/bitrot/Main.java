@@ -35,7 +35,7 @@ public class Main {
         }
 
         // Log the totals now that all paths are processed
-        processor.logTotals();
+        processor.logRunTotals();
 
         if (processor.noFailures() && !FileLoggerUtil.encounteredException()) {
             // If there are no failures or exceptions, call the health check

@@ -24,6 +24,8 @@ import static com.bitrot.SkipUtil.fileIsTooNewToSaveToDatabase;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class MongoManager {
+    private static final ObjectMapper objectMapper;
+
     static final String MONGO_ID_KEY = "_id";
     static final String FILE_ID_KEY = "file_id";
     static final String MODIFIED_TIME_SECONDS_KEY = "mtime_s";
@@ -33,13 +35,31 @@ public class MongoManager {
     static final String LAST_ACCESSED_KEY = "last_accessed";
 
     private final MongoCollection<Document> collection;
-    private final ObjectMapper objectMapper;
+
+    static {
+        // Be able to deserialize ObjectID
+        final SimpleModule module = new SimpleModule();
+        module.addDeserializer(ObjectId.class, new ObjectIdDeserializer());
+        objectMapper = JsonMapper.builder().findAndAddModules().addModule(module).build();
+        // Ignore unknown properties
+        objectMapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     @SuppressWarnings("resource")
     public MongoManager(final String connection_string) {
         final MongoClient client = MongoClients.create(connection_string);
         collection = client.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
 
+        ensureIndexes();
+    }
+
+    MongoManager(final MongoClient client) {
+        collection = client.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
+
+        ensureIndexes();
+    }
+
+    private void ensureIndexes() {
         // Create a unique compound index with the file ID and two modified time fields.
         // Order of the fields matters! That's why we do the most commonly queried fields first.
         // There should never be two documents with the same values for these fields.
@@ -49,14 +69,6 @@ public class MongoManager {
         // Create an index for LAST_ACCESSED_KEY with expiration
         collection.createIndex(Indexes.ascending(LAST_ACCESSED_KEY),
                 new IndexOptions().expireAfter(SECONDS_IN_A_YEAR, TimeUnit.SECONDS));
-
-        // Be able to deserialize ObjectID
-        final SimpleModule module = new SimpleModule();
-        module.addDeserializer(ObjectId.class, new ObjectIdDeserializer());
-        objectMapper = JsonMapper.builder().findAndAddModules().addModule(module).build();
-
-        // Ignore unknown properties
-        objectMapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @Nullable

@@ -1,5 +1,7 @@
 package com.bitrot;
 
+import org.jspecify.annotations.Nullable;
+
 import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.sql.*;
@@ -19,12 +21,41 @@ public class SkipUtil {
     private final Connection connection;
 
     public SkipUtil() {
+        this(null);
+    }
+
+    public SkipUtil(@Nullable final Connection connection) {
         try {
-            connection = DriverManager.getConnection("jdbc:sqlite:" + FILE_NAME);
+            if (connection == null) {
+                this.connection = DriverManager.getConnection("jdbc:sqlite:" + FILE_NAME);
+            } else {
+                this.connection = connection;
+            }
+
             initializeTable();
         } catch (final SQLException e) {
             throw new RuntimeException("Failed to initialize file verification database", e);
         }
+
+        System.out.println(numRows() + " existing rows in the recent verification database");
+    }
+
+    private int numRows() {
+        final String query = "SELECT COUNT(*) AS total FROM " + TABLE_NAME;
+
+        try (final PreparedStatement statement = connection.prepareStatement(query);
+             final ResultSet resultSet = statement.executeQuery()) {
+
+            if (resultSet.next()) {
+                return resultSet.getInt("total");
+            }
+
+        } catch (final Exception e) {
+            //noinspection CallToPrintStackTrace
+            e.printStackTrace();
+        }
+
+        return -1;
     }
 
     /**

@@ -17,8 +17,8 @@ import java.time.format.DateTimeFormatter;
 public class FileLoggerUtil {
     private static final Path LOGS_DIR = Paths.get("logs");
     private static final Path LATEST_FILE_PATH = LOGS_DIR.resolve("latest.txt");
-    private static final Path DATED_FILE_PATH;
     private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
+    private static final Path DATED_FILE_PATH = LOGS_DIR.resolve(LocalDateTime.now().format(FILE_DATE_FORMAT) + ".txt");
 
     private static boolean encounteredException = false;
 
@@ -33,8 +33,7 @@ public class FileLoggerUtil {
             // Initialize and clear the latest.txt file
             Files.writeString(LATEST_FILE_PATH, "", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-            // Set the datetime-named log file
-            DATED_FILE_PATH = LOGS_DIR.resolve(LocalDateTime.now().format(FILE_DATE_FORMAT) + ".txt");
+            // Initialize and clear the dated log file
             Files.writeString(DATED_FILE_PATH, "", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
         } catch (final IOException e) {
             System.err.println("Failed to initialize logging: " + e.getMessage());
