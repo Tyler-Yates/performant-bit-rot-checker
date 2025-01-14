@@ -1,5 +1,9 @@
 package com.bitrot;
 
+import com.bitrot.data.FileRecord;
+import com.bitrot.data.FileResult;
+import com.bitrot.data.Result;
+import com.bitrot.logger.LoggerUtil;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -15,19 +19,21 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
-import static com.bitrot.Constants.THREADS;
+import static com.bitrot.data.Constants.THREADS;
 import static com.bitrot.FileUtils.getFilePathFromAbsolutePath;
 
 public class FileProcessor {
     private final SkipUtil skipUtil;
     private final MongoManager mongoManager;
+    private final LoggerUtil loggerUtil;
     private final Map<Result, Integer> runTotals;
 
     private ExecutorService executor;
 
-    public FileProcessor(final SkipUtil skipUtil, final MongoManager mongoManager) {
+    public FileProcessor(final SkipUtil skipUtil, final MongoManager mongoManager, final LoggerUtil loggerUtil) {
         this.skipUtil = skipUtil;
         this.mongoManager = mongoManager;
+        this.loggerUtil = loggerUtil;
 
         runTotals = new HashMap<>();
     }
@@ -53,7 +59,7 @@ public class FileProcessor {
                         }
                     });
         } catch (final Exception e) {
-            FileLoggerUtil.logException(e);
+            loggerUtil.logException(e);
         } finally {
             // This prevents new tasks from being submitted to the executor, but it still allows in-progress things to finish.
             executor.shutdown();
@@ -68,7 +74,7 @@ public class FileProcessor {
                 final FileResult result = future.get();
                 directoryTotals.put(result.result(), directoryTotals.getOrDefault(result.result(), 0) + 1);
             } catch (final InterruptedException | ExecutionException e) {
-                FileLoggerUtil.logException(e);
+                loggerUtil.logException(e);
             }
         }
 
@@ -84,11 +90,11 @@ public class FileProcessor {
      * Log the run totals to the log files.
      */
     public void logRunTotals() {
-        FileLoggerUtil.log("--------------------------");
-        FileLoggerUtil.log("Totals:");
-        FileLoggerUtil.log("PASS: " + runTotals.getOrDefault(Result.PASS, 0) + " files");
-        FileLoggerUtil.log("FAIL: " + runTotals.getOrDefault(Result.FAIL, 0) + " files");
-        FileLoggerUtil.log("SKIP: " + runTotals.getOrDefault(Result.SKIP, 0) + " files");
+        loggerUtil.log("--------------------------");
+        loggerUtil.log("Totals:");
+        loggerUtil.log("PASS: " + runTotals.getOrDefault(Result.PASS, 0) + " files");
+        loggerUtil.log("FAIL: " + runTotals.getOrDefault(Result.FAIL, 0) + " files");
+        loggerUtil.log("SKIP: " + runTotals.getOrDefault(Result.SKIP, 0) + " files");
     }
 
     /**
@@ -109,7 +115,7 @@ public class FileProcessor {
 
             return executor.submit(() -> getResult(fileRecord, isImmutable));
         } catch (final Exception e) {
-            FileLoggerUtil.logException(e);
+            loggerUtil.logException(e);
             return null;
         }
     }
@@ -130,7 +136,7 @@ public class FileProcessor {
             skipUtil.recordVerification(fileRecord);
         } else if (result.result() == Result.FAIL) {
             // Log failures to disk so we can triage them
-            FileLoggerUtil.log(message);
+            loggerUtil.log(message);
         } else {
             System.out.println(message);
         }

@@ -1,5 +1,6 @@
 package com.bitrot;
 
+import com.bitrot.data.FileRecord;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
@@ -8,7 +9,7 @@ import java.sql.*;
 import java.time.Instant;
 import java.util.regex.Pattern;
 
-import static com.bitrot.Constants.*;
+import static com.bitrot.data.Constants.*;
 
 /**
  * Responsible for checking if we need to check a file, or we can skip it because it has already been checked recently.

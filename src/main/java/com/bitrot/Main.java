@@ -1,5 +1,9 @@
 package com.bitrot;
 
+import com.bitrot.data.Config;
+import com.bitrot.logger.FileLoggerUtil;
+import com.bitrot.logger.LoggerUtil;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -9,8 +13,12 @@ import java.nio.file.Paths;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class Main {
+    private static LoggerUtil loggerUtil;
+
     public static void main(final String[] args) throws IOException {
         final Config config = Config.readConfig();
+
+        loggerUtil = new FileLoggerUtil();
 
         final SkipUtil skipUtil = new SkipUtil();
         final MongoManager mongoManager = new MongoManager(config.getMongoConnectionString());
@@ -18,11 +26,11 @@ public class Main {
         // Clean up the database before we start
         skipUtil.cleanDatabase();
 
-        final FileProcessor processor = new FileProcessor(skipUtil, mongoManager);
+        final FileProcessor processor = new FileProcessor(skipUtil, mongoManager, loggerUtil);
 
-        FileLoggerUtil.log("Mutable paths: " + config.getMutablePaths());
-        FileLoggerUtil.log("Immutable paths: " + config.getImmutablePaths());
-        FileLoggerUtil.log("--------------------------");
+        loggerUtil.log("Mutable paths: " + config.getMutablePaths());
+        loggerUtil.log("Immutable paths: " + config.getImmutablePaths());
+        loggerUtil.log("--------------------------");
 
         // Go through the mutable paths first
         for (final String mutablePath : config.getMutablePaths()) {
@@ -37,7 +45,7 @@ public class Main {
         // Log the totals now that all paths are processed
         processor.logRunTotals();
 
-        if (processor.noFailures() && !FileLoggerUtil.encounteredException()) {
+        if (processor.noFailures() && !loggerUtil.encounteredException()) {
             // If there are no failures or exceptions, call the health check
             callHealthCheck(config.getHealthCheckUrl());
         } else {
@@ -55,7 +63,7 @@ public class Main {
 
             final HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-            FileLoggerUtil.log("Health Check Response Code: " + response.statusCode() + " Body: " + response.body());
+            loggerUtil.log("Health Check Response Code: " + response.statusCode() + " Body: " + response.body());
         } catch (final IOException | InterruptedException e) {
             e.printStackTrace();
         }

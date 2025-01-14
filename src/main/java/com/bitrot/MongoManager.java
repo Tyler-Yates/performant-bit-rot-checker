@@ -1,5 +1,6 @@
 package com.bitrot;
 
+import com.bitrot.data.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -19,20 +20,20 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-import static com.bitrot.Constants.*;
+import static com.bitrot.data.Constants.*;
 import static com.bitrot.SkipUtil.fileIsTooNewToSaveToDatabase;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 
 public class MongoManager {
     private static final ObjectMapper objectMapper;
 
-    static final String MONGO_ID_KEY = "_id";
-    static final String FILE_ID_KEY = "file_id";
-    static final String MODIFIED_TIME_SECONDS_KEY = "mtime_s";
-    static final String MODIFIED_TIME_NANOS_KEY = "mtime_ns";
-    static final String SIZE_KEY = "size";
-    static final String CHECKSUM_KEY = "checksum";
-    static final String LAST_ACCESSED_KEY = "last_accessed";
+    public static final String MONGO_ID_KEY = "_id";
+    public static final String FILE_ID_KEY = "file_id";
+    public static final String MODIFIED_TIME_SECONDS_KEY = "mtime_s";
+    public static final String MODIFIED_TIME_NANOS_KEY = "mtime_ns";
+    public static final String SIZE_KEY = "size";
+    public static final String CHECKSUM_KEY = "checksum";
+    public static final String LAST_ACCESSED_KEY = "last_accessed";
 
     private final MongoCollection<Document> collection;
 

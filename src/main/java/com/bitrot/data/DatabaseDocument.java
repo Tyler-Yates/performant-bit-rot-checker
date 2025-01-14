@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.data;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

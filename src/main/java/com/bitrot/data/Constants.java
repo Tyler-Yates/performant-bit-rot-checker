@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.data;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

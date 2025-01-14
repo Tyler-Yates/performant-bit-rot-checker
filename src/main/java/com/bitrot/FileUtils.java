@@ -9,7 +9,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Formatter;
 import java.util.zip.CRC32;
 
-import static com.bitrot.Constants.CRC_BUFFER_SIZE;
+import static com.bitrot.data.Constants.CRC_BUFFER_SIZE;
 
 public abstract class FileUtils {
     /**

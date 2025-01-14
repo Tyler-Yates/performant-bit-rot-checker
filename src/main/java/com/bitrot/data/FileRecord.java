@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.data;
 
 import java.io.IOException;
 import java.nio.file.Files;

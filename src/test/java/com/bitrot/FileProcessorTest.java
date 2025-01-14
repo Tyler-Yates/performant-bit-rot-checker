@@ -1,5 +1,7 @@
 package com.bitrot;
 
+import com.bitrot.data.Result;
+import com.bitrot.logger.StdoutLoggerUtil;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -32,8 +34,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-import static com.bitrot.Constants.MONGO_COLLECTION_NAME;
-import static com.bitrot.Constants.MONGO_DB_NAME;
+import static com.bitrot.data.Constants.MONGO_COLLECTION_NAME;
+import static com.bitrot.data.Constants.MONGO_DB_NAME;
 import static com.bitrot.MongoManager.*;
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.*;
@@ -61,7 +63,7 @@ public class FileProcessorTest {
         mongoClient = MongoClients.create("mongodb://" + runningMongo.current().getServerAddress());
         final MongoManager mongoManager = new MongoManager(mongoClient);
 
-        fileProcessor = new FileProcessor(skipUtil, mongoManager);
+        fileProcessor = new FileProcessor(skipUtil, mongoManager, new StdoutLoggerUtil());
     }
 
     @AfterEach

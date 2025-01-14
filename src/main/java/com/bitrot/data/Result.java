@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.data;
 
 public enum Result {
     PASS,

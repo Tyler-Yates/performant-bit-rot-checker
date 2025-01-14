@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -6,7 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import static com.bitrot.Constants.CONFIG_FILE_NAME;
+import static com.bitrot.data.Constants.CONFIG_FILE_NAME;
 
 @SuppressWarnings("unused")  // We need the getters and setters for the ObjectMapper
 public class Config {

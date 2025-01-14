@@ -1,4 +1,4 @@
-package com.bitrot;
+package com.bitrot.logger;
 
 import org.jspecify.annotations.NonNull;
 
@@ -14,7 +14,7 @@ import java.time.format.DateTimeFormatter;
  * Utility class to log important messages to disk.
  * Most messages should go to standard output to not clutter the log file on disk.
  */
-public class FileLoggerUtil {
+public class FileLoggerUtil implements LoggerUtil {
     private static final Path LOGS_DIR = Paths.get("logs");
     private static final Path LATEST_FILE_PATH = LOGS_DIR.resolve("latest.txt");
     private static final DateTimeFormatter FILE_DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss");
@@ -22,8 +22,7 @@ public class FileLoggerUtil {
 
     private static boolean encounteredException = false;
 
-    // Initialize the logging infrastructure at program startup
-    static {
+    public FileLoggerUtil() {
         try {
             // Ensure the logs directory exists
             if (Files.notExists(LOGS_DIR)) {
@@ -46,7 +45,7 @@ public class FileLoggerUtil {
      *
      * @param message The message to log
      */
-    public static void log(@NonNull final String message) {
+    public void log(@NonNull final String message) {
         try {
             // Write to latest.txt
             Files.writeString(
@@ -77,19 +76,15 @@ public class FileLoggerUtil {
      * @param e the exception
      */
     @SuppressWarnings("CallToPrintStackTrace")
-    public static void logException(@NonNull final Exception e) {
+    public void logException(@NonNull final Exception e) {
         encounteredException = true;
 
         e.printStackTrace();
         log(" [" + e.getClass().getSimpleName() + "] " + e.getMessage());
     }
 
-    /**
-     * Returns whether we have encountered an Exception during this program execution.
-     *
-     * @return true if we have encountered an exception, false otherwise
-     */
-    public static boolean encounteredException() {
+
+    public boolean encounteredException() {
         return encounteredException;
     }
 }
