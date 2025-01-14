@@ -29,8 +29,6 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -275,20 +273,21 @@ public class FileProcessorTest {
         final String fileName = "specific-test-file.txt";
         final Path tempFile = tempDir.resolve(fileName);
         Files.writeString(tempFile, "xyz", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-        // Pretend it was created a while ago
-        final Instant modifiedInstant = Instant.now().minus(60, ChronoUnit.DAYS);
-        final FileTime newCreationTime = FileTime.from(modifiedInstant);
+        // Pretend it was created (and thus modified) a while ago
+        final Instant createdInstant = Instant.now().minus(100, ChronoUnit.DAYS);
+        final FileTime newCreationTime = FileTime.from(createdInstant);
+        Files.setAttribute(tempFile, "basic:creationTime", newCreationTime);
         Files.setAttribute(tempFile, "basic:lastModifiedTime", newCreationTime);
 
         // Set up the collection as if we've already seen a file before.
         final MongoCollection<Document> collection = mongoClient.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
         assertEquals(0, collection.countDocuments());
         // Notice how old lastAccessed is
-        final Instant lastAccessed = LocalDateTime.of(2000, 1, 2, 0, 0, 0).toInstant(ZoneOffset.UTC);
+        final Instant lastAccessed = Instant.now().minus(60, ChronoUnit.DAYS);
         final Document existingDocument = new Document()
                 .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
-                .append(MODIFIED_TIME_SECONDS_KEY, modifiedInstant.getEpochSecond())
-                .append(MODIFIED_TIME_NANOS_KEY, modifiedInstant.getNano())
+                .append(MODIFIED_TIME_SECONDS_KEY, createdInstant.getEpochSecond())
+                .append(MODIFIED_TIME_NANOS_KEY, createdInstant.getNano())
                 .append(SIZE_KEY, 3L)
                 .append(CHECKSUM_KEY, 3951999591L) // CRC32 of 'xyz'
                 .append(LAST_ACCESSED_KEY, lastAccessed);
@@ -308,8 +307,8 @@ public class FileProcessorTest {
         final Document expectedDocument = new Document()
                 .append(MONGO_ID_KEY, secondDocument.get(MONGO_ID_KEY))
                 .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
-                .append(MODIFIED_TIME_SECONDS_KEY, modifiedInstant.getEpochSecond())
-                .append(MODIFIED_TIME_NANOS_KEY, modifiedInstant.getNano())
+                .append(MODIFIED_TIME_SECONDS_KEY, createdInstant.getEpochSecond())
+                .append(MODIFIED_TIME_NANOS_KEY, createdInstant.getNano())
                 .append(SIZE_KEY, 3L)
                 .append(CHECKSUM_KEY, 3951999591L) // CRC32 of 'xyz'
                 .append(LAST_ACCESSED_KEY, secondDocumentLastAccessed);
