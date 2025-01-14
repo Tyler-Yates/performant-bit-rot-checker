@@ -29,14 +29,11 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static com.bitrot.MongoManager.*;
 import static com.bitrot.data.Constants.MONGO_COLLECTION_NAME;
 import static com.bitrot.data.Constants.MONGO_DB_NAME;
-import static com.bitrot.MongoManager.*;
 import static java.lang.Thread.sleep;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -150,11 +147,23 @@ public class FileProcessorTest {
         // There should now be two documents: the first one and the new one for the modification
         assertEquals(1, collection.countDocuments());
         assertEquals(expectedFirstDocument, collection.find().first());
+
+        /*
+        SECTION
+         */
+        // If we delete the file, the database entries should be unchanged
+        Files.delete(tempFile);
+        final Map<Result, Integer> fifthResults = fileProcessor.processFiles(tempDir, isImmutable);
+        // No files, so no results
+        assertEquals(Collections.EMPTY_MAP, fifthResults);
+        // Documents in Mongo should be unchanged
+        assertEquals(1, collection.countDocuments());
+        assertEquals(expectedFirstDocument, collection.find().first());
     }
 
     @Test
     public void testProcessFilesMutable(@TempDir final Path tempDir) throws IOException, InterruptedException {
-        final boolean isImmutable = true;
+        final boolean isImmutable = false;
 
         // Ensure that the collection is empty at the start
         final MongoCollection<Document> collection = mongoClient.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
@@ -168,48 +177,23 @@ public class FileProcessorTest {
         /*
         SECTION
          */
-        // First processing
-        fileProcessor.processFiles(tempDir, isImmutable);
+        // First processing should be a single PASS
+        final Map<Result, Integer> firstResults = fileProcessor.processFiles(tempDir, isImmutable);
+        assertEquals(Map.of(Result.PASS, 1), firstResults);
         assertEquals(1, collection.countDocuments());
-
         // Assert on the document itself
-        final Document document = collection.find().first();
-        assertNotNull(document);
+        final Document firstDocument = collection.find().first();
+        assertNotNull(firstDocument);
         final Instant modifiedTime = Files.getLastModifiedTime(tempFile).toInstant();
-        final Document expectedDocument = new Document()
-                .append(MONGO_ID_KEY, document.get(MONGO_ID_KEY))
-                .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205")
+        final Date firstLastAccessed = (Date) firstDocument.get(LAST_ACCESSED_KEY);
+        final Document expectedFirstDocument = new Document()
+                .append(MONGO_ID_KEY, firstDocument.get(MONGO_ID_KEY))
+                .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
                 .append(MODIFIED_TIME_SECONDS_KEY, modifiedTime.getEpochSecond())
                 .append(MODIFIED_TIME_NANOS_KEY, modifiedTime.getNano())
                 .append(SIZE_KEY, 3L)
                 .append(CHECKSUM_KEY, 2286445522L)
-                .append(LAST_ACCESSED_KEY, document.get(LAST_ACCESSED_KEY));
-        assertEquals(expectedDocument, document);
-
-        /*
-        SECTION
-         */
-        // Modify the file to have an older creation date so we can process it
-        final FileTime newCreationTime = FileTime.from(Instant.parse("2000-01-01T10:00:00Z"));
-        Files.setAttribute(tempFile, "basic:creationTime", newCreationTime);
-
-        final Map<Result, Integer> secondResults = fileProcessor.processFiles(tempDir, isImmutable);
-        assertEquals(Map.of(Result.PASS, 1), secondResults);
-        assertEquals(1, collection.countDocuments());
-
-        // Assert on the document itself
-        final Document firstDocument = collection.find().first();
-        assertNotNull(firstDocument);
-        final Instant firstModifiedTime = Files.getLastModifiedTime(tempFile).toInstant();
-        final Date firstLastAccessed = (Date) firstDocument.get(LAST_ACCESSED_KEY);
-        final Document expectedFirstDocument = new Document()
-                .append(MONGO_ID_KEY, firstDocument.get(MONGO_ID_KEY))
-                .append(FILE_ID_KEY, "cf3ab19e0eb597ee451ab1b172f4c43897ced2428d1e231938c9aaed9f93c16a") // SHA-256 of '\dir1\mutable-file.txt'
-                .append(MODIFIED_TIME_SECONDS_KEY, firstModifiedTime.getEpochSecond())
-                .append(MODIFIED_TIME_NANOS_KEY, firstModifiedTime.getNano())
-                .append(SIZE_KEY, 3L)
-                .append(CHECKSUM_KEY, 891568578L) // CRC32 of 'abc'
-                .append(LAST_ACCESSED_KEY, firstLastAccessed);
+                .append(LAST_ACCESSED_KEY, firstDocument.get(LAST_ACCESSED_KEY));
         assertEquals(expectedFirstDocument, firstDocument);
         // Check that the last_accessed field is very recent
         assertTrue((System.currentTimeMillis() - firstLastAccessed.getTime()) / 1000 < 60, "The last_accessed field is too old");
@@ -237,7 +221,7 @@ public class FileProcessorTest {
         // There should now be two documents: the first one and the new one for the modification
         assertEquals(2, collection.countDocuments());
 
-        // Assert on the document itself.
+        // Assert on the documents themselves.
         // Ensure we are sorting from oldest to newest document.
         final List<Document> documents = new ArrayList<>();
         collection.find().sort(Sorts.ascending(MONGO_ID_KEY)).into(documents);
@@ -248,7 +232,7 @@ public class FileProcessorTest {
         final Date secondLastAccessed = (Date) secondDocument.get(LAST_ACCESSED_KEY);
         final Document expectedSecondDocument = new Document()
                 .append(MONGO_ID_KEY, secondDocument.get(MONGO_ID_KEY))
-                .append(FILE_ID_KEY, "cf3ab19e0eb597ee451ab1b172f4c43897ced2428d1e231938c9aaed9f93c16a") // SHA-256 of '\dir1\mutable-file.txt'
+                .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
                 .append(MODIFIED_TIME_SECONDS_KEY, secondModifiedTime.getEpochSecond())
                 .append(MODIFIED_TIME_NANOS_KEY, secondModifiedTime.getNano())
                 .append(SIZE_KEY, 3L)
@@ -260,5 +244,23 @@ public class FileProcessorTest {
 
         // Check that the last_accessed field is very recent
         assertTrue((System.currentTimeMillis() - secondLastAccessed.getTime()) / 1000 < 60, "The last_accessed field is too old");
+
+        /*
+        SECTION
+         */
+        // If we delete the file, the database entries should be unchanged
+        Files.delete(tempFile);
+        final Map<Result, Integer> fifthResults = fileProcessor.processFiles(tempDir, isImmutable);
+        // No files, so no results
+        assertEquals(Collections.EMPTY_MAP, fifthResults);
+        // There should now be two documents: the first one and the new one for the modification
+        assertEquals(2, collection.countDocuments());
+
+        // Assert on the documents themselves.
+        // Ensure we are sorting from oldest to newest document.
+        final List<Document> secondDocuments = new ArrayList<>();
+        collection.find().sort(Sorts.ascending(MONGO_ID_KEY)).into(secondDocuments);
+        assertEquals(2, secondDocuments.size());
+        assertEquals(List.of(expectedFirstDocument, expectedSecondDocument), secondDocuments);
     }
 }
