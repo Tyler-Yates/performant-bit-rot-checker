@@ -29,6 +29,9 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 import static com.bitrot.MongoManager.*;
@@ -262,5 +265,57 @@ public class FileProcessorTest {
         collection.find().sort(Sorts.ascending(MONGO_ID_KEY)).into(secondDocuments);
         assertEquals(2, secondDocuments.size());
         assertEquals(List.of(expectedFirstDocument, expectedSecondDocument), secondDocuments);
+    }
+
+    @Test
+    public void testLastAccessedUpdated(@TempDir final Path tempDir) throws IOException {
+        final boolean isImmutable = true;
+
+        // Write the test file
+        final String fileName = "specific-test-file.txt";
+        final Path tempFile = tempDir.resolve(fileName);
+        Files.writeString(tempFile, "xyz", StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        // Pretend it was created a while ago
+        final Instant modifiedInstant = Instant.now().minus(60, ChronoUnit.DAYS);
+        final FileTime newCreationTime = FileTime.from(modifiedInstant);
+        Files.setAttribute(tempFile, "basic:lastModifiedTime", newCreationTime);
+
+        // Set up the collection as if we've already seen a file before.
+        final MongoCollection<Document> collection = mongoClient.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
+        assertEquals(0, collection.countDocuments());
+        // Notice how old lastAccessed is
+        final Instant lastAccessed = LocalDateTime.of(2000, 1, 2, 0, 0, 0).toInstant(ZoneOffset.UTC);
+        final Document existingDocument = new Document()
+                .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
+                .append(MODIFIED_TIME_SECONDS_KEY, modifiedInstant.getEpochSecond())
+                .append(MODIFIED_TIME_NANOS_KEY, modifiedInstant.getNano())
+                .append(SIZE_KEY, 3L)
+                .append(CHECKSUM_KEY, 3951999591L) // CRC32 of 'xyz'
+                .append(LAST_ACCESSED_KEY, lastAccessed);
+        collection.insertOne(existingDocument);
+        assertEquals(1, collection.countDocuments());
+        final Document actuallyInsertedDocument = collection.find().first();
+        assertNotNull(actuallyInsertedDocument);
+        System.out.println("Existing document last accessed time: " + actuallyInsertedDocument.get(LAST_ACCESSED_KEY));
+
+        // Now, verify that checking the file passes and the last_accessed field is updated
+        final Map<Result, Integer> results = fileProcessor.processFiles(tempDir, isImmutable);
+        assertEquals(Map.of(Result.PASS, 1), results);
+        assertEquals(1, collection.countDocuments());
+        final Document secondDocument = collection.find().first();
+        assertNotNull(secondDocument);
+        final Date secondDocumentLastAccessed = (Date) secondDocument.get(LAST_ACCESSED_KEY);
+        final Document expectedDocument = new Document()
+                .append(MONGO_ID_KEY, secondDocument.get(MONGO_ID_KEY))
+                .append(FILE_ID_KEY, "c7f43a78dbc983d05e2ac88098c83f0901847bb75e4719e9ebda55fa8e206205") // SHA-256 of '\specific-test-file.txt'
+                .append(MODIFIED_TIME_SECONDS_KEY, modifiedInstant.getEpochSecond())
+                .append(MODIFIED_TIME_NANOS_KEY, modifiedInstant.getNano())
+                .append(SIZE_KEY, 3L)
+                .append(CHECKSUM_KEY, 3951999591L) // CRC32 of 'xyz'
+                .append(LAST_ACCESSED_KEY, secondDocumentLastAccessed);
+        assertEquals(expectedDocument, secondDocument);
+        // Check that the last_accessed field is very recent
+        assertTrue((System.currentTimeMillis() - secondDocumentLastAccessed.getTime()) / 1000 < 60, "The last_accessed field is too old");
+        System.out.println("Existing document last accessed time: " + secondDocumentLastAccessed);
     }
 }
