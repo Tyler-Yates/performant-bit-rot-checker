@@ -333,4 +333,22 @@ public class FileProcessorTest {
         assertEquals(-1L, databaseDocument.mTimeSeconds());
         assertEquals(-1, databaseDocument.mTimeNanos());
     }
+
+    @Test
+    public void testIntFields() {
+        final MongoCollection<Document> collection = mongoClient.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
+        assertEquals(0, collection.countDocuments());
+        final Document existingDocument = new Document()
+                .append(CHECKSUM_KEY, 1)
+                .append(SIZE_KEY, 1)
+                .append(MODIFIED_TIME_SECONDS_KEY, 1);
+        collection.insertOne(existingDocument);
+
+        final DatabaseDocument databaseDocument = new DatabaseDocument(collection.find().first());
+        assertNull(databaseDocument.fileId());
+        assertEquals(1L, databaseDocument.checksum());
+        assertEquals(1L, databaseDocument.size());
+        assertEquals(1L, databaseDocument.mTimeSeconds());
+        assertEquals(-1, databaseDocument.mTimeNanos());
+    }
 }

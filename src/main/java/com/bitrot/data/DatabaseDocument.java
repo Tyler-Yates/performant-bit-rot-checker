@@ -21,7 +21,11 @@ public class DatabaseDocument {
     }
 
     public long mTimeSeconds() {
-        return document.get(MODIFIED_TIME_SECONDS_KEY, -1L);
+        final Object val = document.get(MODIFIED_TIME_SECONDS_KEY);
+        if (val == null) {
+            return -1L;
+        }
+        return ((Number) val).longValue();
     }
 
     public int mTimeNanos() {
@@ -29,10 +33,18 @@ public class DatabaseDocument {
     }
 
     public long size() {
-        return document.get(SIZE_KEY, -1L);
+        final Object val = document.get(SIZE_KEY);
+        if (val == null) {
+            return -1L;
+        }
+        return ((Number) val).longValue();
     }
 
     public long checksum() {
-        return document.get(CHECKSUM_KEY, -1L);
+        final Object val = document.get(CHECKSUM_KEY);
+        if (val == null) {
+            return -1L;
+        }
+        return ((Number) val).longValue();
     }
 }
