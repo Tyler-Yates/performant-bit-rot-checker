@@ -10,6 +10,8 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Paths;
+import java.time.Duration;
+import java.time.Instant;
 
 @SuppressWarnings("CallToPrintStackTrace")
 public class Main {
@@ -19,6 +21,8 @@ public class Main {
         final Config config = Config.readConfig();
 
         loggerUtil = new FileLoggerUtil();
+
+        final Instant start = Instant.now();
 
         final SkipUtil skipUtil = new SkipUtil();
         final MongoManager mongoManager = new MongoManager(config.getMongoConnectionString());
@@ -45,6 +49,10 @@ public class Main {
         // Log the totals now that all paths are processed
         processor.logRunTotals();
 
+        // Log the runtime
+        final Instant end = Instant.now();
+        logRuntime(start, end);
+
         if (processor.noFailures() && !loggerUtil.encounteredException()) {
             // If there are no failures or exceptions, call the health check
             callHealthCheck(config.getHealthCheckUrl());
@@ -52,6 +60,17 @@ public class Main {
             // Otherwise exit with a non-zero status
             System.exit(1);
         }
+    }
+
+    private static void logRuntime(final Instant start, final Instant end) {
+        final Duration duration = Duration.between(start, end);
+
+        final long days = duration.toDays();
+        final long hours = duration.toHours() % 24;
+        final long minutes = duration.toMinutes() % 60;
+        final long seconds = duration.getSeconds() % 60;
+
+        loggerUtil.log(String.format("Total runtime: %d day(s) %d hour(s) %d minute(s) %d second(s)", days, hours, minutes, seconds));
     }
 
     private static void callHealthCheck(final String url) {
