@@ -1,10 +1,9 @@
 package com.bitrot;
 
-import com.bitrot.data.*;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.bitrot.data.DatabaseDocument;
+import com.bitrot.data.FileRecord;
+import com.bitrot.data.FileResult;
+import com.bitrot.data.Result;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -13,20 +12,16 @@ import com.mongodb.client.model.Indexes;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
-import static com.bitrot.data.Constants.*;
 import static com.bitrot.SkipUtil.fileIsTooNewToSaveToDatabase;
-import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
+import static com.bitrot.data.Constants.*;
 
 public class MongoManager {
-    private static final ObjectMapper objectMapper;
-
     public static final String MONGO_ID_KEY = "_id";
     public static final String FILE_ID_KEY = "file_id";
     public static final String MODIFIED_TIME_SECONDS_KEY = "mtime_s";
@@ -36,15 +31,6 @@ public class MongoManager {
     public static final String LAST_ACCESSED_KEY = "last_accessed";
 
     private final MongoCollection<Document> collection;
-
-    static {
-        // Be able to deserialize ObjectID
-        final SimpleModule module = new SimpleModule();
-        module.addDeserializer(ObjectId.class, new ObjectIdDeserializer());
-        objectMapper = JsonMapper.builder().findAndAddModules().addModule(module).build();
-        // Ignore unknown properties
-        objectMapper.configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
 
     @SuppressWarnings("resource")
     public MongoManager(final String connection_string) {
@@ -79,11 +65,7 @@ public class MongoManager {
             return null;
         }
 
-        try {
-            return objectMapper.readValue(document.toJson(), DatabaseDocument.class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return new DatabaseDocument(document);
     }
 
     @Nullable
@@ -221,7 +203,7 @@ public class MongoManager {
             }
 
             // The old Python-era documents are missing the mtime_ns field. Add that field if necessary.
-            if (databaseDocument.mTimeNanos() == null) {
+            if (databaseDocument.mTimeNanos() == -1L) {
                 addMtimeNanoFieldIfNecessary(databaseDocument, fileRecord);
             }
 

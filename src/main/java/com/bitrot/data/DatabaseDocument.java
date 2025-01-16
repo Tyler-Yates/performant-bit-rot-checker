@@ -1,18 +1,38 @@
 package com.bitrot.data;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.bson.Document;
 import org.bson.types.ObjectId;
 
 import static com.bitrot.MongoManager.*;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public record DatabaseDocument(
-        @JsonProperty(MONGO_ID_KEY) ObjectId objectId,
-        @JsonProperty(FILE_ID_KEY) String fileId,
-        @JsonProperty(MODIFIED_TIME_SECONDS_KEY) long mTimeSeconds,
-        @JsonProperty(MODIFIED_TIME_NANOS_KEY) Integer mTimeNanos,
-        @JsonProperty(CHECKSUM_KEY) long checksum,
-        @JsonProperty(SIZE_KEY) long size
-) {
+public class DatabaseDocument {
+    private final Document document;
+
+    public DatabaseDocument(final Document document) {
+        this.document = document;
+    }
+
+    public ObjectId objectId() {
+        return (ObjectId) document.get(MONGO_ID_KEY);
+    }
+
+    public String fileId() {
+        return document.get(FILE_ID_KEY, null);
+    }
+
+    public long mTimeSeconds() {
+        return document.get(MODIFIED_TIME_SECONDS_KEY, -1L);
+    }
+
+    public int mTimeNanos() {
+        return document.get(MODIFIED_TIME_NANOS_KEY, -1);
+    }
+
+    public long size() {
+        return document.get(SIZE_KEY, -1L);
+    }
+
+    public long checksum() {
+        return document.get(CHECKSUM_KEY, -1L);
+    }
 }
