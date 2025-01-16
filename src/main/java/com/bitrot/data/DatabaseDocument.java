@@ -17,7 +17,7 @@ public class DatabaseDocument {
     }
 
     public String fileId() {
-        return document.get(FILE_ID_KEY, null);
+        return (String) document.get(FILE_ID_KEY);
     }
 
     public long mTimeSeconds() {

@@ -1,5 +1,6 @@
 package com.bitrot;
 
+import com.bitrot.data.DatabaseDocument;
 import com.bitrot.data.Result;
 import com.bitrot.logger.StdoutLoggerUtil;
 import com.mongodb.client.MongoClient;
@@ -316,5 +317,20 @@ public class FileProcessorTest {
         // Check that the last_accessed field is very recent
         assertTrue((System.currentTimeMillis() - secondDocumentLastAccessed.getTime()) / 1000 < 60, "The last_accessed field is too old");
         System.out.println("Existing document last accessed time: " + secondDocumentLastAccessed);
+    }
+
+    @Test
+    public void testMissingFields() {
+        final MongoCollection<Document> collection = mongoClient.getDatabase(MONGO_DB_NAME).getCollection(MONGO_COLLECTION_NAME);
+        assertEquals(0, collection.countDocuments());
+        final Document existingDocument = new Document();
+        collection.insertOne(existingDocument);
+
+        final DatabaseDocument databaseDocument = new DatabaseDocument(collection.find().first());
+        assertNull(databaseDocument.fileId());
+        assertEquals(-1L, databaseDocument.checksum());
+        assertEquals(-1L, databaseDocument.size());
+        assertEquals(-1L, databaseDocument.mTimeSeconds());
+        assertEquals(-1, databaseDocument.mTimeNanos());
     }
 }
