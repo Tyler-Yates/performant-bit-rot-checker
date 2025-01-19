@@ -121,7 +121,8 @@ public class MongoManager {
     private DatabaseDocument findDocument(final FileRecord fileRecord, final boolean isImmutable) throws IOException {
         // Start off with trying to find an exact match (both ID and mtime)
         final Document query = new Document(FILE_ID_KEY, fileRecord.getFileId())
-                .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds());
+                .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds())
+                .append(MODIFIED_TIME_NANOS_KEY, fileRecord.getMTimeNanos());
 
         final DatabaseDocument exactMatch = findOne(query);
 
@@ -184,7 +185,7 @@ public class MongoManager {
                         " but Database=" + databaseDocument.fileId());
             }
 
-            if (fileRecord.getMTimeSeconds() != databaseDocument.mTimeSeconds()) {
+            if (fileRecord.getMTimeSeconds() != databaseDocument.mTimeSeconds() || fileRecord.getMTimeNanos() != databaseDocument.mTimeNanos()) {
                 return new FileResult(Result.FAIL, "File modified time mismatch for record " + fileRecord.getLogIdentifier() +
                         ": Local=" + getMTimeString(fileRecord.getMTimeSeconds(), fileRecord.getMTimeNanos()) +
                         " but Database=" + getMTimeString(databaseDocument.mTimeSeconds(), databaseDocument.mTimeNanos()));
