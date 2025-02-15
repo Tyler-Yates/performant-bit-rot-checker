@@ -157,7 +157,7 @@ public class MongoManager {
 
         collection.updateOne(filter, update, new UpdateOptions().upsert(true));
 
-        return new FileResult(Result.PASS, "New file record saved to database: " + data);
+        return new FileResult(Result.PASS, "New file record saved to database for file " + fileRecord.getFilePath() + ": " + data);
     }
 
     public FileResult processFileRecord(final FileRecord fileRecord, final boolean isImmutable) throws IOException {
