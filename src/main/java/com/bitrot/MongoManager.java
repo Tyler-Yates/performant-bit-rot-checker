@@ -118,7 +118,7 @@ public class MongoManager {
     }
 
     @Nullable
-    private DatabaseDocument findDocument(final FileRecord fileRecord, final boolean isImmutable) throws IOException {
+    DatabaseDocument findDocument(final FileRecord fileRecord, final boolean isImmutable) throws IOException {
         // Start off with trying to find an exact match (both ID and mtime)
         final Document query = new Document(FILE_ID_KEY, fileRecord.getFileId())
                 .append(MODIFIED_TIME_SECONDS_KEY, fileRecord.getMTimeSeconds())
