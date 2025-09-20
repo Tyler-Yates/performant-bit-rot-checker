@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.io.IOException;
 import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.sql.*;
 import java.time.Instant;
 import java.util.regex.Pattern;
@@ -170,6 +171,35 @@ public class SkipUtil {
         } catch (final IOException e) {
             System.err.println("Error calculating fileIsTooNewToSaveToDatabase() for file " + fileRecord.getAbsoluteFilePath());
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Removes a file from the verification database.
+     *
+     * @param absolutePath The absolute path of the file to remove
+     * @return The number of rows affected (1 if the file was found and removed, 0 otherwise)
+     * @throws SQLException if there is an error executing the SQL query
+     */
+    public int removeFileFromDatabase(final Path absolutePath) throws SQLException {
+        final String deleteSQL = "DELETE FROM " + TABLE_NAME + " WHERE absolute_file_path = ?";
+        try (final PreparedStatement stmt = connection.prepareStatement(deleteSQL)) {
+            stmt.setString(1, absolutePath.toString());
+            return stmt.executeUpdate();
+        }
+    }
+    
+    /**
+     * Closes the database connection and releases any other resources.
+     * Should be called when this SkipUtil is no longer needed.
+     */
+    public void close() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (SQLException e) {
+                System.err.println("Error closing database connection: " + e.getMessage());
+            }
         }
     }
 }
