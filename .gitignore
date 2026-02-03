@@ -4,3 +4,4 @@ config.json
 config.backup.json
 file_verification.sqlite
 logs/
+ids_to_delete.txt
